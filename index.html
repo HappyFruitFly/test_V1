@@ -305,7 +305,10 @@ select.tin{padding:0 8px}
 .fl i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);width:18px}
 .fl.on{background:var(--bluesoft);color:var(--ink);font-weight:600}
 .fl.on i{color:var(--blue)}
+<<<<<<< HEAD
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+=======
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
 /* 역할 선택 */
 .rolebtn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:36px;min-width:116px;padding:0 10px 0 12px;border:1px solid #D5D2C9;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink)}
 .rolebtn:hover{border-color:#A9A59B}
@@ -432,8 +435,12 @@ body{min-width:0}
   .tbar{flex-wrap:wrap}
   table.members{min-width:0!important}
   table.members th{white-space:nowrap}
+<<<<<<< HEAD
   table.members th:nth-child(2),table.members td:nth-child(2),table.members th:nth-child(4),table.members td:nth-child(4),table.members th:nth-child(5),table.members td:nth-child(5){display:none}
   table.members .rolebtn{min-width:96px}
+=======
+  table.members th:nth-child(2),table.members td:nth-child(2),table.members th:nth-child(5),table.members td:nth-child(5){display:none}
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
   table.members td:first-child{padding-left:14px!important}
   .search{width:100%}
   .tbar .chips{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
@@ -1393,7 +1400,10 @@ const projKey=(id=CUR?.id)=>LS_KEY+':'+id;
 const readProj=id=>lsGet(projKey(id));
 const saveDB=()=>lsSet(DB_KEY,DB);
 const userOf=id=>DB.users.find(u=>u.id===id);
+<<<<<<< HEAD
 const isActive=u=>u.verified&&!u.removed;
+=======
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
 const isAdmin=()=>ME&&ME.role==='관리자';
 const av=(u,cls='')=>u?`<span class="avatar ${cls}" style="background:${AV_COLORS[(u.c||0)%AV_COLORS.length]}" title="${esc(u.name)}">${esc(u.name.length>2?u.name.slice(-2):u.name)}</span>`:'';
 function rel(t){const s=(Date.now()-t)/1000;if(s<60)return'방금 전';if(s<3600)return Math.floor(s/60)+'분 전';if(s<86400)return Math.floor(s/3600)+'시간 전';if(s<7*86400)return Math.floor(s/86400)+'일 전';return new Date(t).toLocaleDateString('ko-KR');}
@@ -1545,7 +1555,10 @@ const FORMS={
   login(f){const e=val(f,'email').toLowerCase(),p=f.elements.pw.value;let ok=fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':'');ok=fErr(f,'pw',p?'':'비밀번호를 입력하세요.')&&ok;fErr(f,'form','');if(!ok)return;
     const u=DB.users.find(x=>x.email.toLowerCase()===e);
     if(!u||u.pw!==p){fErr(f,'form','이메일 또는 비밀번호가 올바르지 않습니다.');f.elements.pw.select();return;}
+<<<<<<< HEAD
     if(u.removed){fErr(f,'form','팀에서 제거된 계정입니다. 관리자에게 문의하세요.');return;}
+=======
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
     if(!u.verified){PENDING=u;showAuth('verify');return;}
     signIn(u,f.elements.remember.checked);},
   signup(f){const name=val(f,'name'),email=val(f,'email').toLowerCase(),pw=f.elements.pw.value,pw2=f.elements.pw2.value;
@@ -1576,9 +1589,13 @@ const FORMS={
     toast(sample?'샘플 데이터로 프로젝트를 만들었습니다 · 3D로 먼저 확인하세요':'프로젝트를 만들었습니다 · 공간정보와 POI를 올려 주세요');},
   members(f){const p=DB.projects.find(x=>x.id===f.dataset.id);if(!p)return;const sel=$$('input[name="mem"]:checked',f).map(i=>i.value);
     p.members=[p.owner,...sel.filter(id=>id!==p.owner)];saveDB();closeModal();logAct(`멤버 구성 변경 (${p.members.length}명)`,p.id);render2();toast('멤버를 저장했습니다');},
+<<<<<<< HEAD
   invite(f){const e=val(f,'email').toLowerCase();if(!fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':DB.users.some(u=>u.email.toLowerCase()===e&&isActive(u))?'이미 팀에 있는 멤버입니다.':DB.invites.some(i=>i.email===e)?'이미 초대한 이메일입니다.':''))return;
     const back=DB.users.find(u=>u.email.toLowerCase()===e&&u.removed);
     if(back){back.removed=false;back.role=f.elements.role.value;saveDB();logAct(`${back.name} 팀 복귀 (${back.role})`,null);closeModal();renderDash();toast(`${back.name}님을 다시 팀에 추가했습니다`);return;}
+=======
+  invite(f){const e=val(f,'email').toLowerCase();if(!fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':DB.users.some(u=>u.email.toLowerCase()===e&&u.verified)?'이미 팀에 있는 멤버입니다.':DB.invites.some(i=>i.email===e)?'이미 초대한 이메일입니다.':''))return;
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
     DB.invites.unshift({email:e,role:f.elements.role.value,at:Date.now(),by:ME.id});saveDB();logAct(`${e} 초대 (${f.elements.role.value})`,null);closeModal();renderDash();toast('초대 메일을 보냈습니다 (목업)');},
   account(f){const name=val(f,'name');if(!fErr(f,'name',name?'':'이름을 입력하세요.'))return;
     const cur=f.elements.cpw.value,np=f.elements.npw.value;
@@ -1616,7 +1633,11 @@ function renderDash(){if(!ME)return;
 const myProjects=()=>DB.projects.filter(p=>p.members.includes(ME.id));
 function renderProjects(){const ps=myProjects();const act=DB.activity.filter(a=>!a.p||ps.some(p=>p.id===a.p)).slice(0,8);
   const running=ps.filter(p=>!p.done?.[5]).length,iss=ps.reduce((s,p)=>s+(p.stats?.issues||0),0);
+<<<<<<< HEAD
   const team=DB.users.filter(isActive);
+=======
+  const team=DB.users.filter(u=>u.verified);
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
   $('#dMain').innerHTML=`<div class="dwrap"><div class="dcol">
     <div class="dh"><div style="flex:1"><h1>프로젝트</h1><p>${esc(ME.name)}님, ${ps.length?`참여 중인 건물 네트워크 ${ps.length}개 중 ${running}개가 진행 중입니다.`:'아직 참여 중인 프로젝트가 없습니다.'}</p></div>
       <button class="btn pri lg" data-act="newProj">${ICON.plus}새 프로젝트</button></div>
@@ -1666,6 +1687,7 @@ function thumbSvg(st){
   for(const n of nm.values())if(n.type!=='poi')o.push(`<circle cx="${X(n.x)}" cy="${Y(n.y)}" r="1.8" fill="#fff" stroke="#2F5BD3" stroke-width="1"/>`);
   if(!nm.size)(st.pois||[]).filter(p=>p.floor===fl).forEach(p=>o.push(`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="2.4" fill="#1C1D1F"/>`));
   return`<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${o.join('')}<text x="10" y="18" font-size="10" font-family="IBM Plex Mono,monospace" fill="#5F5D57">${esc(fl)}</text></svg>`;}
+<<<<<<< HEAD
 function renderTeam(){const users=DB.users.filter(isActive);const admin=isAdmin();const ri=ROLES.indexOf(ME.role);
   $('#dMain').innerHTML=`<div class="dwrap one"><div class="dcol">
     <div class="dh"><div style="flex:1"><h1>팀·권한</h1><p>멤버의 역할에 따라 업로드·편집·검수·내보내기 권한이 달라집니다.</p></div>
@@ -1673,13 +1695,27 @@ function renderTeam(){const users=DB.users.filter(isActive);const admin=isAdmin(
     ${admin?'':'<div class="fnote" style="background:var(--warnsoft);color:var(--warnink)">역할 변경과 멤버 초대·제거는 관리자만 할 수 있습니다.</div>'}
     <section class="card tbl" style="padding:0;overflow:hidden"><table class="t members">
       <thead><tr><th style="padding-left:20px">멤버</th><th>소속</th><th style="width:150px">역할</th><th>참여 프로젝트</th><th>최근 접속</th><th style="width:1%"><span class="sr">관리</span></th></tr></thead>
+=======
+function renderTeam(){const users=DB.users.filter(u=>u.verified);const admin=isAdmin();const ri=ROLES.indexOf(ME.role);
+  $('#dMain').innerHTML=`<div class="dwrap one"><div class="dcol">
+    <div class="dh"><div style="flex:1"><h1>팀·권한</h1><p>멤버의 역할에 따라 업로드·편집·검수·내보내기 권한이 달라집니다.</p></div>
+      <button class="btn pri lg" data-act="invite" ${admin?'':'disabled title="관리자만 초대할 수 있습니다"'}>${ICON.plus}멤버 초대</button></div>
+    ${admin?'':'<div class="fnote" style="background:var(--warnsoft);color:var(--warnink)">역할 변경과 멤버 초대는 관리자만 할 수 있습니다.</div>'}
+    <section class="card tbl" style="padding:0;overflow:hidden"><table class="t members">
+      <thead><tr><th style="padding-left:20px">멤버</th><th>소속</th><th style="width:150px">역할</th><th>참여 프로젝트</th><th>최근 접속</th></tr></thead>
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
       <tbody>${users.map(u=>{const n=DB.projects.filter(p=>p.members.includes(u.id)).length;return`<tr>
         <td style="padding-left:20px"><div style="display:flex;align-items:center;gap:10px">${av(u)}<div><b>${esc(u.name)}</b>${u.id===ME.id?' <span class="badge b-gray">나</span>':''}<div class="muted mono" style="font-size:11px">${esc(u.email)}</div></div></div></td>
         <td>${esc(u.org||'-')}</td>
         <td>${admin&&u.id!==ME.id?`<button class="rolebtn" data-act="roleMenu" data-uid="${u.id}" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(u.name)} 역할: ${esc(u.role)}"><span>${esc(u.role)}</span>${ICON.down}</button>`:`<span class="badge ${u.role==='관리자'?'b-blue':'b-gray'}">${esc(u.role)}</span>`}</td>
+<<<<<<< HEAD
         <td class="mono">${n}</td><td class="muted">${u.id===ME.id?'접속 중':rel(u.last||Date.now())}</td>
         <td style="padding-right:16px">${admin&&u.id!==ME.id?`<button class="btn sm danger" data-act="removeMember" data-uid="${u.id}" aria-label="${esc(u.name)} 팀에서 제거">제거</button>`:''}</td></tr>`;}).join('')}
       ${DB.invites.map(i=>`<tr><td style="padding-left:20px"><div style="display:flex;align-items:center;gap:10px"><span class="avatar" style="background:var(--bg);color:var(--mute);border:1px dashed #C9C6BD">?</span><div><b class="mono" style="font-weight:500">${esc(i.email)}</b><div><span class="badge b-warn">초대 대기</span></div></div></div></td><td class="muted">-</td><td><span class="badge b-gray">${esc(i.role)}</span></td><td class="muted">-</td><td class="muted">${rel(i.at)} 초대</td><td style="padding-right:16px">${admin?`<button class="btn sm danger" data-act="cancelInvite" data-v="${esc(i.email)}" style="white-space:nowrap">초대 취소</button>`:''}</td></tr>`).join('')}
+=======
+        <td class="mono">${n}</td><td class="muted">${u.id===ME.id?'접속 중':rel(u.last||Date.now())}</td></tr>`;}).join('')}
+      ${DB.invites.map(i=>`<tr><td style="padding-left:20px"><div style="display:flex;align-items:center;gap:10px"><span class="avatar" style="background:var(--bg);color:var(--mute);border:1px dashed #C9C6BD">?</span><div><b class="mono" style="font-weight:500">${esc(i.email)}</b><div><span class="badge b-warn">초대 대기</span></div></div></div></td><td class="muted">-</td><td><span class="badge b-gray">${esc(i.role)}</span></td><td class="muted">${rel(i.at)} 초대</td><td>${admin?`<button class="btn sm danger" data-act="cancelInvite" data-v="${esc(i.email)}">초대 취소</button>`:''}</td></tr>`).join('')}
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
       </tbody></table></section>
     <section class="card tbl" style="padding:0;overflow:hidden"><div style="padding:16px 20px 0"><h2 style="font-size:14px">역할별 권한</h2><p class="muted" style="margin:4px 0 12px;font-size:12px">강조된 열이 내 역할(${esc(ME.role)})입니다.</p></div>
       <table class="t perm"><thead><tr><th style="padding-left:20px">기능</th>${ROLES.map((r,i)=>`<th class="${i===ri?'me':''}">${r}</th>`).join('')}</tr></thead>
@@ -1688,7 +1724,11 @@ function renderTeam(){const users=DB.users.filter(isActive);const admin=isAdmin(
 const render2=()=>{if(VIEW==='dash')renderDash();else if(VIEW==='app')renderWsTop();};
 
 /* ---------- 모달 ---------- */
+<<<<<<< HEAD
 function newProjModal(){const others=DB.users.filter(u=>isActive(u)&&u.id!==ME.id);
+=======
+function newProjModal(){const others=DB.users.filter(u=>u.verified&&u.id!==ME.id);
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
   openModal(`<form data-form="newProj" novalidate style="display:flex;flex-direction:column;gap:16px">
     <div><h2>새 프로젝트</h2><p class="muted" style="margin:4px 0 0">건물 하나를 하나의 프로젝트로 관리합니다. 만든 뒤 데이터 업로드 단계로 이동합니다.</p></div>
     ${fg('name','프로젝트 이름',{req:1,ph:'예: 도서관 실내 네트워크'})}
@@ -1700,7 +1740,11 @@ function newProjModal(){const others=DB.users.filter(u=>isActive(u)&&u.id!==ME.i
       <label class="opt"><input type="radio" name="start" value="sample"><span><b>샘플 데이터로 시작</b><div class="muted" style="font-size:12px;margin-top:2px">가상의 공학관 1F–3F (공간 39 · 출입문 32 · POI 33)를 불러옵니다.</div></span></label></div>
     <div class="fgrp"><label>함께 작업할 멤버</label>${others.length?`<div class="mlist">${others.map(u=>`<label><input type="checkbox" name="mem" value="${u.id}">${av(u,'sm')}<span style="flex:1">${esc(u.name)} <span class="muted mono" style="font-size:11px">${esc(u.email)}</span></span><span class="badge b-gray">${esc(u.role)}</span></label>`).join('')}</div>`:'<p class="muted" style="margin:0">팀 멤버가 없습니다. 팀·권한에서 초대할 수 있습니다.</p>'}</div>
     <div class="foot"><button type="button" class="btn lg" data-act="closeModal">취소</button><button class="btn pri lg" type="submit">프로젝트 만들기</button></div></form>`,'newProj');}
+<<<<<<< HEAD
 function membersModal(p){const all=DB.users.filter(isActive);const can=isAdmin()||p.owner===ME.id;
+=======
+function membersModal(p){const all=DB.users.filter(u=>u.verified);const can=isAdmin()||p.owner===ME.id;
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
   openModal(`<form data-form="members" data-id="${p.id}" style="display:flex;flex-direction:column;gap:16px">
     <div><h2>멤버 관리</h2><p class="muted" style="margin:4px 0 0">${esc(p.name)}에 참여할 멤버를 고릅니다. 권한은 각 멤버의 팀 역할을 따릅니다.</p></div>
     <div class="mlist" style="max-height:320px">${all.map(u=>`<label><input type="checkbox" name="mem" value="${u.id}" ${p.members.includes(u.id)?'checked':''} ${u.id===p.owner||!can?'disabled':''}>${av(u,'sm')}<span style="flex:1">${esc(u.name)}${u.id===p.owner?' <span class="badge b-blue">소유자</span>':''}</span><span class="badge b-gray">${esc(u.role)}</span></label>`).join('')}</div>
@@ -1710,12 +1754,15 @@ function deleteModal(p){const can=isAdmin()||p.owner===ME.id;
   openModal(`<div><h2>프로젝트를 삭제할까요?</h2><p class="muted" style="margin:6px 0 0;line-height:1.6"><b style="color:var(--ink)">${esc(p.name)}</b>의 공간정보·네트워크·검수 기록이 모두 삭제되며 되돌릴 수 없습니다. 필요하면 먼저 내보내기에서 프로젝트 파일(.json)을 저장하세요.</p></div>
     ${can?'':'<div class="fnote bad">프로젝트 소유자나 관리자만 삭제할 수 있습니다.</div>'}
     <div class="foot"><button class="btn lg" data-act="closeModal">취소</button><button class="btn lg" style="background:var(--err);border-color:var(--err);color:#fff" data-act="confirmDelete" data-id="${p.id}" ${can?'':'disabled'}>삭제</button></div>`);}
+<<<<<<< HEAD
 function removeModal(u){const own=DB.projects.filter(p=>p.owner===u.id),joined=DB.projects.filter(p=>p.members.includes(u.id));
   openModal(`<div style="display:flex;align-items:center;gap:12px">${av(u,'lg')}<div><h2>${esc(u.name)}님을 팀에서 제거할까요?</h2><p class="muted mono" style="margin:2px 0 0;font-size:12px">${esc(u.email)} · ${esc(u.role)}</p></div></div>
     <ul style="margin:0;padding-left:18px;line-height:1.8;color:var(--ink2)"><li>참여 중인 프로젝트 ${joined.length}개에서 빠지고, 로그인해도 팀 프로젝트를 볼 수 없습니다.</li>
       ${own.length?`<li>소유한 프로젝트 ${own.length}개(${own.map(p=>esc(p.name)).join(', ')})의 소유자가 <b>${esc(ME.name)}</b>님으로 바뀝니다.</li>`:''}
       <li>작업한 내용과 활동 기록은 그대로 남고, 다시 초대하면 복귀할 수 있습니다.</li></ul>
     <div class="foot"><button class="btn lg" data-act="closeModal">취소</button><button class="btn lg" style="background:var(--err);border-color:var(--err);color:#fff" data-act="confirmRemove" data-uid="${u.id}">제거</button></div>`);}
+=======
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
 function inviteModal(){openModal(`<form data-form="invite" novalidate style="display:flex;flex-direction:column;gap:16px">
     <div><h2>멤버 초대</h2><p class="muted" style="margin:4px 0 0">초대 메일의 링크로 가입하면 팀에 합류합니다.</p></div>
     ${fg('email','이메일',{req:1,type:'email',ph:'teammate@example.com'})}
@@ -1784,10 +1831,13 @@ Object.assign(ACT,{
   dtab(b){closeMenus();DTAB=b.dataset.v;if(VIEW!=='dash')showDash(DTAB);else renderDash();},
   pfilter(b){PFILTER=b.dataset.v;$$('[data-act="pfilter"]').forEach(x=>x.classList.toggle('on',x===b));renderProjGrid();},
   invite(){inviteModal();},
+<<<<<<< HEAD
   removeMember(b){const u=userOf(b.dataset.uid);if(u&&isAdmin()&&u.id!==ME.id)removeModal(u);},
   confirmRemove(b){const u=userOf(b.dataset.uid);if(!u||!isAdmin()||u.id===ME.id)return;
     for(const p of DB.projects){p.members=p.members.filter(id=>id!==u.id);if(p.owner===u.id){p.owner=ME.id;if(!p.members.includes(ME.id))p.members.unshift(ME.id);}}
     u.removed=true;saveDB();logAct(`${u.name} 팀에서 제거`,null);closeModal();renderDash();toast(`${u.name}님을 팀에서 제거했습니다`);},
+=======
+>>>>>>> b90ae0708e56084fa5e0b46b8a7ceaa06f771609
   cancelInvite(b){DB.invites=DB.invites.filter(i=>i.email!==b.dataset.v);saveDB();renderDash();toast('초대를 취소했습니다');},
   account(){closeMenus();accountModal();},
   modalBg(b,e){if(e.target===b)closeModal();},
