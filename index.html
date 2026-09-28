@@ -1,0 +1,1854 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="실내 길찾기">
+<title>실내 길찾기 네트워크</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<style>
+:root{
+  --bg:#F4F3EF;--panel:#FFFFFF;--line:#E2E0D9;--line2:#EFEDE7;--ink:#1C1D1F;--ink2:#3F3E3A;--mute:#5F5D57;--faint:#8A877F;
+  --blue:#2F5BD3;--blue2:#244AB3;--bluesoft:#E8EEFB;--blueink:#1E3F9E;--navy:#0B2475;
+  --err:#B4410C;--errink:#8F3108;--errsoft:#FBEDE5;--errbadge:#FBE1D3;
+  --warnink:#6E4700;--warnsoft:#F8ECCB;--ok:#1F5C38;--oksoft:#E3F1E8;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{font-family:'IBM Plex Sans KR',system-ui,sans-serif;color:var(--ink);background:var(--bg);font-size:13px;min-width:1200px;overflow:hidden}
+button,input,select{font:inherit;color:inherit}
+.mono{font-family:'IBM Plex Mono',monospace}
+#app{display:flex;flex-direction:column;height:100vh}
+header.top{height:56px;flex-shrink:0;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;width:260px}
+.logo{width:30px;height:30px;border-radius:7px;background:var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.brand b{display:block;font-size:13px}.brand small{display:block;font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:210px}
+nav.steps{flex:1;display:flex;justify-content:center;align-items:center;gap:4px}
+.step{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;font-size:13px;color:var(--mute);background:none;border:none;cursor:pointer;white-space:nowrap}
+.step:hover{background:var(--bg);color:var(--ink)}
+.dot{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:1.5px solid #C9C6BD}
+.step.done .dot{background:var(--ink);border-color:var(--ink);color:#fff}
+.step.cur{color:var(--ink);font-weight:600;background:var(--bluesoft)}
+.step.cur .dot{background:var(--blue);border-color:var(--blue);color:#fff}
+.sep{width:14px;height:1px;background:#D5D2C9}
+.topright{width:260px;display:flex;justify-content:flex-end;align-items:center;gap:10px;font-size:12px;color:var(--mute)}
+.screen{display:none;flex:1;min-height:0}
+.screen.on{display:flex}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:8px;border:1px solid #D5D2C9;background:#fff;font-size:13px;font-weight:500;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--bg)}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:var(--blue2)}
+.btn.sm{height:30px;padding:0 10px;font-size:12px}
+.btn.lg{height:44px;padding:0 18px;font-size:14px}
+.btn.danger{color:var(--errink)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.chip{height:32px;padding:0 12px;border-radius:8px;border:1px solid #D5D2C9;background:#fff;font-size:12px;cursor:pointer}
+.chip.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.h3{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--mute)}
+.card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:14px;min-height:0}
+.card h2{margin:0;font-size:16px}
+.chk{display:flex;align-items:center;gap:10px;min-height:30px;cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--blue);margin:0}
+.chk .cnt{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mute)}
+.fld{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:36px;border-bottom:1px solid var(--line2)}
+.fld>span:first-child,.fld>label:first-child{color:var(--mute)}
+.inp{height:32px;border:1px solid #D5D2C9;border-radius:6px;background:#fff;padding:0 8px;min-width:0}
+.inp.num{width:96px;text-align:right;font-family:'IBM Plex Mono',monospace}
+.badge{flex-shrink:0;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.b-err{background:var(--errbadge);color:var(--errink)}.b-warn{background:var(--warnsoft);color:var(--warnink)}
+.b-ok{background:var(--oksoft);color:var(--ok)}.b-blue{background:var(--bluesoft);color:var(--blueink)}.b-gray{background:var(--bg);color:var(--mute)}
+.rng{width:100%;accent-color:var(--blue);margin:0}
+.empty{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--mute);background:rgba(244,243,239,.92);z-index:5;text-align:center}
+.empty b{color:var(--ink);font-size:16px}
+.empty[hidden]{display:none}
+/* panels */
+.pl{width:256px;flex-shrink:0;background:#fff;border-right:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:20px;overflow:auto}
+.pr{width:340px;flex-shrink:0;background:#fff;border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.mapwrap{flex:1;min-width:0;position:relative;display:flex;flex-direction:column}
+.mapsvg{flex:1;min-height:0;width:100%;display:block;cursor:default;user-select:none}
+.maptop{position:absolute;top:14px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:flex-start;pointer-events:none;z-index:3}
+.maptop>*{pointer-events:auto}
+.hint{display:flex;gap:8px;align-items:center;height:40px;padding:0 14px;border-radius:8px;background:var(--ink);color:#fff}
+.hint span{opacity:.75}
+.seg{display:flex;gap:2px;padding:3px;background:#fff;border:1px solid var(--line);border-radius:8px}
+.seg button{height:34px;padding:0 12px;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--ink2)}
+.seg button:hover{background:var(--bg)}
+.seg button.on{background:var(--ink);color:#fff;font-weight:600}
+.zoom{display:flex;align-items:center;gap:2px;padding:0 4px;background:#fff;border:1px solid var(--line);border-radius:8px}
+.zb{width:36px;height:40px;border:none;background:none;border-radius:6px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+.zb:hover{background:var(--bg)}
+.legend{position:absolute;right:14px;bottom:54px;display:flex;gap:14px;align-items:center;padding:8px 12px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:12px;color:var(--ink2)}
+.legend span{display:flex;align-items:center;gap:6px}
+.legend i{display:inline-block;flex-shrink:0}
+.scalebar{position:absolute;left:14px;bottom:54px;padding:8px 10px;background:#fff;border:1px solid var(--line);border-radius:8px;font-size:11px}
+.scalebar div{height:6px;border:1.5px solid var(--ink);border-top:none;margin-bottom:3px}
+.statbar{height:40px;flex-shrink:0;display:flex;align-items:center;gap:20px;padding:0 18px;border-top:1px solid var(--line);background:#fff;font-size:12px;color:var(--ink2)}
+.statbar b{font-family:'IBM Plex Mono',monospace}
+.tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+.tool{display:flex;align-items:center;gap:6px;height:44px;padding:0 8px;white-space:nowrap;font-size:12px!important;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;font-size:13px}
+.tool:hover{background:var(--bg)}
+.tool.on{background:var(--ink);border-color:var(--ink);color:#fff}
+.tool kbd{margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:10px;opacity:.65}
+.infobox{margin-top:auto;padding:12px;border-radius:8px;background:var(--bg);font-size:12px;line-height:1.6;color:var(--ink2)}
+.props{padding:16px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px;flex-shrink:0;max-height:52%;overflow:auto}
+.issues{flex:1;min-height:0;padding:16px;display:flex;flex-direction:column;gap:10px}
+.isslist{display:flex;flex-direction:column;gap:6px;overflow:auto;min-height:0}
+.iss-item{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-align:left}
+.iss-item:hover{border-color:#A9A59B}
+.iss-item.on{border-color:var(--err);background:var(--errsoft)}
+.iss-item .t{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.iss-item .t b{font-size:13px}.iss-item .t small{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fixbox{padding:10px 12px;border-radius:8px;background:var(--bg);font-size:12px;line-height:1.55}
+.muted{color:var(--mute)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:12px}
+.kv span:nth-child(odd){color:var(--mute)}
+.link{background:none;border:none;padding:0;color:var(--blue);cursor:pointer;font-family:'IBM Plex Mono',monospace;font-size:12px;text-decoration:underline}
+/* svg */
+.sp-corridor{fill:#ECEAE3}.sp-room{fill:#fff}.sp-stair,.sp-ev{fill:#F1EFE9}
+.wl{fill:none;stroke:#A9A59B;stroke-width:1.5}
+.lk{stroke:var(--blue);stroke-width:2.5;stroke-linecap:round}
+.lk.t-poi{stroke-width:1.5;stroke-dasharray:3 4}
+.lk.t-door{stroke-width:2}
+.lk.nowheel{stroke-dasharray:8 3}
+.lk.bad{stroke:var(--err);stroke-width:3;stroke-dasharray:7 4}
+.lk.sel{stroke:var(--navy);stroke-width:6;stroke-dasharray:none}
+.lk.dim{stroke:#C9C5BB;stroke-width:2}
+.nd{fill:#fff;stroke:var(--blue);stroke-width:2}
+.nd.door{fill:var(--blue)}
+.nd.sel{fill:var(--navy);stroke:#fff;stroke-width:2}
+.nd.pend{fill:#F2B705;stroke:var(--ink)}
+.vm{fill:none;stroke:#6B4FBB;stroke-width:2}
+.poi{fill:var(--ink);stroke:#fff;stroke-width:2}
+.poi.sel{fill:var(--navy);stroke:#F2B705;stroke-width:3}
+.poi.dim{fill:#A9A59B}
+.lbl{font-size:11.5px;fill:var(--ink2);font-weight:500;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round;pointer-events:none}
+.iss{fill:none;stroke:var(--err);stroke-width:1.5;stroke-dasharray:3 3}
+.iss.on{fill:rgba(180,65,12,.10);stroke-width:2.5;stroke-dasharray:none}
+.route{fill:none;stroke:var(--blue);stroke-width:7;stroke-linecap:round;stroke-linejoin:round}
+.pendline{stroke:#C98F00;stroke-width:2;stroke-dasharray:5 4}
+.pin{stroke:#fff;stroke-width:3}
+.pintx{fill:#fff;font-size:11px;font-weight:700;pointer-events:none}
+/* upload */
+.drop{border:1.5px dashed #C9C6BD;border-radius:10px;background:#FAFAF7;padding:16px;display:flex;align-items:center;gap:14px}
+.drop.over{border-color:var(--blue);background:var(--bluesoft)}
+table.t{border-collapse:collapse;width:100%;font-size:12px}
+table.t th{text-align:left;font-weight:600;color:var(--mute);padding:7px 10px;background:#F7F6F2;border-bottom:1px solid var(--line)}
+table.t td{padding:7px 10px;border-bottom:1px solid var(--line2)}
+.tile{background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tile .v{font-size:30px;font-weight:700;line-height:1.15;font-family:'IBM Plex Mono',monospace}
+.opt{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:8px;cursor:pointer}
+.opt input{margin:3px 0 0;accent-color:var(--blue);width:16px;height:16px}
+.opt.on{border-color:var(--blue);background:var(--bluesoft)}
+.log{display:grid;grid-template-columns:20px minmax(0,1fr) 70px;gap:10px;align-items:center;min-height:34px;border-bottom:1px solid var(--line2)}
+.hist{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;text-align:left}
+.hist:hover{border-color:#A9A59B}
+.res{flex-shrink:0;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.res.ok{background:var(--oksoft);color:var(--ok)}.res.fail{background:var(--errbadge);color:var(--errink)}
+#v3dHost{flex:1;min-height:0;position:relative;background:#EEEDE8}
+#v3dHost canvas{display:block;width:100%;height:100%}
+#toast{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:50}
+#toast.on{opacity:1}
+.scroll{overflow:auto;min-height:0}
+/* ===== 계정 · 프로젝트 관리 (추가) ===== */
+[hidden]{display:none!important}
+.view{height:100vh;display:flex;flex-direction:column}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.link2{background:none;border:none;padding:0;color:var(--blue);cursor:pointer;font-weight:500}
+.link2:hover{text-decoration:underline}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.backbtn{width:30px;height:30px;border-radius:7px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;color:var(--ink)}
+.backbtn:hover{background:var(--bg)}
+header.top .topright{width:auto;min-width:260px}
+/* auth */
+#auth{flex-direction:row;overflow:auto;background:var(--bg)}
+.au-side{width:46%;max-width:640px;min-height:100vh;flex-shrink:0;background:var(--ink);color:#fff;padding:36px 48px 32px;display:flex;flex-direction:column;gap:28px}
+.au-brand{display:flex;align-items:center;gap:10px}
+.au-brand b{display:block;font-size:14px}.au-brand small{display:block;font-size:11px;color:#A9A7A0}
+.au-side h1{font-size:30px;line-height:1.35;margin:0;font-weight:700;letter-spacing:-.01em}
+.au-side p{color:#BDBBB4;margin:0;font-size:14px;line-height:1.7;max-width:460px}
+.au-art{flex:1;min-height:200px;width:100%;max-height:340px}
+.au-route{stroke-dasharray:400;stroke-dashoffset:400;animation:draw 4s ease-in-out infinite}
+@keyframes draw{0%{stroke-dashoffset:400}45%,85%{stroke-dashoffset:0}100%{stroke-dashoffset:-400}}
+@media (prefers-reduced-motion:reduce){.au-route{animation:none;stroke-dashoffset:0}}
+.au-flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.au-flow div{border:1px solid #3A3B3E;border-radius:10px;padding:10px 12px;font-size:12px;color:#D8D6CF;line-height:1.4}
+.au-flow b{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8FB0FF;margin-bottom:4px;font-weight:500}
+.au-foot{font-size:11px;color:#8A877F}
+.au-main{flex:1;display:flex;align-items:center;justify-content:center;padding:40px 24px;min-height:100vh}
+.au-card{width:400px;max-width:100%;display:flex;flex-direction:column;gap:16px}
+.au-card h2{font-size:24px;margin:0;letter-spacing:-.01em}
+.au-sub{margin:6px 0 0;font-size:14px;color:var(--mute);line-height:1.6}
+.fgrp{display:flex;flex-direction:column;gap:6px;min-width:0}
+.fgrp>label{font-size:12px;font-weight:600;color:var(--ink2)}
+.fgrp>label em{font-style:normal;color:var(--err);margin-left:2px}
+.tin{height:42px;border:1px solid #D5D2C9;border-radius:8px;background:#fff;padding:0 12px;font-size:14px;width:100%}
+textarea.tin{height:72px;padding:10px 12px;resize:vertical;line-height:1.5}
+select.tin{padding:0 8px}
+.tin:focus{outline:2px solid var(--blue);outline-offset:-1px;border-color:var(--blue)}
+.tin.bad{border-color:var(--err)}
+.ferr{font-size:12px;color:var(--errink);line-height:1.4}
+.ferr:empty{display:none}
+.fnote{padding:10px 12px;border-radius:8px;font-size:13px;line-height:1.5}
+.fnote.ok{background:var(--oksoft);color:var(--ok)}
+.fnote.bad{background:var(--errsoft);color:var(--errink)}
+.pwwrap{position:relative}
+.pwwrap .pwt{position:absolute;right:6px;top:6px;height:30px;padding:0 10px;border:none;background:none;border-radius:6px;color:var(--mute);cursor:pointer;font-size:12px}
+.pwwrap .pwt:hover{background:var(--bg)}
+.divider{display:flex;align-items:center;gap:12px;color:var(--faint);font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--line)}
+.demo{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;background:var(--bluesoft);border:1px solid #C9D6F5}
+.meter{display:flex;gap:4px;margin-top:2px}
+.meter i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.meter[data-s="1"] i:nth-child(-n+1){background:var(--err)}
+.meter[data-s="2"] i:nth-child(-n+2){background:#C98F00}
+.meter[data-s="3"] i:nth-child(-n+3){background:var(--blue)}
+.meter[data-s="4"] i{background:var(--ok)}
+.codebox{display:flex;gap:8px}
+.codebox input{width:52px;height:60px;text-align:center;font-size:24px;font-family:'IBM Plex Mono',monospace;border:1px solid #D5D2C9;border-radius:8px;background:#fff}
+.codebox input:focus{outline:2px solid var(--blue);outline-offset:-1px}
+.stepper{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)}
+.stepper span{display:flex;align-items:center;gap:6px}
+.stepper i{width:20px;height:20px;border-radius:50%;border:1.5px solid #C9C6BD;display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px;font-weight:600}
+.stepper .on{color:var(--ink);font-weight:600}.stepper .on i{background:var(--blue);border-color:var(--blue);color:#fff}
+.stepper .ok i{background:var(--ink);border-color:var(--ink);color:#fff}
+.stepper b{flex:1;max-width:28px;height:1px;background:#D5D2C9}
+.agree{display:flex;flex-direction:column;gap:2px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.agree .chk{min-height:28px}
+.agree .chk.all{font-weight:600;border-bottom:1px solid var(--line2);padding-bottom:6px;margin-bottom:2px}
+.bigicon{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+/* avatar · menu */
+.avatar{width:32px;height:32px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;flex-shrink:0;letter-spacing:-.02em}
+.avatar.sm{width:24px;height:24px;font-size:10px}
+.avatar.lg{width:40px;height:40px;font-size:13px}
+.avs{display:flex;align-items:center;padding-left:6px}
+.avs .avatar{border:2px solid #fff;margin-left:-6px}
+.avs .more{background:var(--bg);color:var(--mute);border-color:#fff}
+.umenu{position:relative}
+.ubtn{display:flex;align-items:center;gap:8px;height:40px;padding:0 6px 0 4px;border:1px solid transparent;border-radius:999px;background:none;cursor:pointer}
+.ubtn:hover{background:var(--bg);border-color:var(--line)}
+.menu{position:absolute;top:calc(100% + 6px);right:0;min-width:230px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 28px rgba(28,29,31,.14);padding:6px;z-index:40;display:flex;flex-direction:column;text-align:left}
+.menu .mh{padding:10px 10px 12px;border-bottom:1px solid var(--line2);margin-bottom:4px;display:flex;gap:10px;align-items:center}
+.menu .mh div{min-width:0}.menu .mh b{display:block;font-size:13px}.menu .mh small{display:block;color:var(--mute);font-size:12px}
+.menu button{display:flex;width:100%;align-items:center;gap:10px;height:36px;padding:0 10px;border:none;background:none;border-radius:6px;cursor:pointer;text-align:left;font-size:13px;color:var(--ink)}
+.menu button:hover{background:var(--bg)}
+.menu button.danger{color:var(--errink)}
+.menu hr{border:none;border-top:1px solid var(--line2);margin:4px 0}
+/* dashboard */
+#dash{background:var(--bg)}
+.dnav{flex:1;display:flex;gap:4px}
+.dnav button{height:36px;padding:0 14px;border-radius:8px;border:none;background:none;color:var(--mute);cursor:pointer;font-weight:500;font-size:13px}
+.dnav button:hover{background:var(--bg);color:var(--ink)}
+.dnav button.on{background:var(--bluesoft);color:var(--ink);font-weight:600}
+.dwrap{max-width:1360px;margin:0 auto;padding:28px 40px 48px;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:28px;align-items:start}
+.dwrap.one{grid-template-columns:minmax(0,1fr)}
+.dcol{display:flex;flex-direction:column;gap:18px;min-width:0}
+.dh{display:flex;align-items:flex-end;gap:16px}
+.dh h1{margin:0;font-size:24px}
+.dh p{margin:4px 0 0;font-size:14px;color:var(--mute)}
+.tiles4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.tile .v.sm{font-size:24px}
+.tbar{display:flex;align-items:center;gap:10px}
+.search{position:relative;width:280px}
+.search input{padding-left:34px;height:36px;font-size:13px}
+.search svg{position:absolute;left:11px;top:10px;color:var(--faint)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
+.pcard{position:relative;background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;display:flex;flex-direction:column;text-align:left;padding:0;font:inherit;color:inherit;transition:border-color .12s,box-shadow .12s}
+.pcard:hover{border-color:#A9A59B;box-shadow:0 4px 14px rgba(28,29,31,.07)}
+.pcard .th{height:148px;background:#F7F6F2;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.pcard .th svg{width:100%;height:100%;display:block}
+.thempty{display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--faint);font-size:12px}
+.pcard .pb{padding:14px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.pcard .nm{font-size:15px;font-weight:600;padding-right:34px}
+.pcard .kebab{position:absolute;top:156px;right:10px;width:30px;height:30px;border:none;background:none;border-radius:6px;cursor:pointer;color:var(--mute);display:flex;align-items:center;justify-content:center}
+.pcard .kebab:hover{background:var(--bg);color:var(--ink)}
+.pcard .menu{top:188px;right:10px;min-width:180px}
+.prog{display:flex;gap:3px}
+.prog i{flex:1;height:4px;border-radius:2px;background:var(--line)}
+.prog i.on{background:var(--blue)}
+.pmeta{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--mute)}
+.pstats{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--ink2);padding-top:10px;border-top:1px solid var(--line2)}
+.pstats b{font-family:'IBM Plex Mono',monospace;font-weight:500}
+.pnew{border:1.5px dashed #C9C6BD;border-radius:12px;background:transparent;min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;color:var(--mute);font-size:13px}
+.pnew:hover{border-color:var(--blue);background:var(--bluesoft);color:var(--blueink)}
+.pnew .plus{width:44px;height:44px;border-radius:50%;background:#fff;border:1px solid var(--line);display:flex;align-items:center;justify-content:center}
+.act{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line2);font-size:12.5px;line-height:1.5}
+.act:last-child{border-bottom:none}
+.act small{display:block;color:var(--faint);font-size:11px;margin-top:1px}
+.perm td,.perm th{text-align:center}
+.perm td:first-child,.perm th:first-child{text-align:left}
+.perm .me{background:var(--bluesoft)}
+.yes{color:var(--ok);font-weight:700}.no{color:#C9C6BD}
+/* modal */
+.modal-bg{position:fixed;inset:0;background:rgba(28,29,31,.42);display:flex;align-items:center;justify-content:center;z-index:70;padding:24px}
+.modal{width:540px;max-width:100%;max-height:calc(100vh - 48px);overflow:auto;background:#fff;border-radius:14px;padding:24px;display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 50px rgba(28,29,31,.25)}
+.modal h2{margin:0;font-size:18px}
+.modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal .foot{display:flex;justify-content:flex-end;gap:8px;padding-top:4px}
+.mlist{display:flex;flex-direction:column;border:1px solid var(--line);border-radius:8px;max-height:220px;overflow:auto}
+.mlist label{display:flex;align-items:center;gap:10px;padding:8px 12px;border-bottom:1px solid var(--line2);cursor:pointer}
+.mlist label:last-child{border-bottom:none}
+.mlist input{width:16px;height:16px;accent-color:var(--blue);margin:0}
+/* flow guide */
+#flowBtn{position:fixed;right:16px;bottom:16px;z-index:60;height:36px;padding:0 14px;border-radius:999px;border:none;background:var(--ink);color:#fff;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;box-shadow:0 6px 18px rgba(28,29,31,.25)}
+#flowBtn .mono{opacity:.7;font-weight:400}
+#flowPanel{position:fixed;right:16px;bottom:60px;z-index:60;width:292px;max-height:calc(100vh - 90px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 14px 36px rgba(28,29,31,.18);padding:14px;display:flex;flex-direction:column;gap:10px}
+#flowPanel h4{margin:0;font-size:11px;font-weight:600;color:var(--faint);letter-spacing:.02em}
+.fl{display:flex;align-items:center;gap:10px;width:100%;height:32px;padding:0 8px;border:none;background:none;border-radius:6px;cursor:pointer;text-align:left;font-size:13px;color:var(--ink2)}
+.fl:hover{background:var(--bg)}
+.fl i{font-style:normal;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);width:18px}
+.fl.on{background:var(--bluesoft);color:var(--ink);font-weight:600}
+.fl.on i{color:var(--blue)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+/* 역할 선택 */
+.rolebtn{display:inline-flex;align-items:center;justify-content:space-between;gap:8px;height:36px;min-width:116px;padding:0 10px 0 12px;border:1px solid #D5D2C9;border-radius:8px;background:#fff;cursor:pointer;font-size:14px;font-weight:500;color:var(--ink)}
+.rolebtn:hover{border-color:#A9A59B}
+.rolebtn[aria-expanded="true"]{border-color:var(--blue);outline:2px solid var(--bluesoft)}
+.menu.fixed{position:fixed;right:auto;min-width:280px;z-index:80}
+.menu .ropt{height:auto;padding:10px 12px 10px 8px;align-items:flex-start;gap:8px}
+.ropt .ck{width:18px;flex-shrink:0;text-align:center;color:var(--blue);font-weight:700;font-size:14px;line-height:20px}
+.ropt b{display:block;font-size:14px;line-height:20px}
+.ropt small{display:block;color:var(--mute);font-size:12px;margin-top:2px}
+.menu .ropt.on{background:var(--bluesoft)}
+/* ===== 반응형 (태블릿 ≤1100px · 모바일 ≤760px) ===== */
+body{min-width:0}
+.view,#app{height:100vh;height:100dvh}
+.mapsvg{touch-action:none}
+.au-main{position:relative;flex-direction:column}
+.au-legal{position:absolute;left:0;right:0;bottom:20px;display:flex;justify-content:center;gap:16px;font-size:12px;color:var(--faint)}
+.au-legal button{background:none;border:none;padding:0;color:inherit;cursor:pointer;font-size:12px}
+.au-legal button:hover{color:var(--ink)}
+.tbl{overflow-x:auto!important}
+.tbl table{min-width:680px}
+
+@media (max-width:1100px){
+  /* 공통 헤더 */
+  header.top{gap:10px;padding:0 14px}
+  header.top .brand{width:auto;min-width:0;flex-shrink:1}
+  header.top .topright{min-width:0}
+  #saveState{display:none}
+  /* 작업 단계: 현재 단계만 이름 표시 */
+  nav.steps{justify-content:flex-start;overflow-x:auto;scrollbar-width:none;gap:2px}
+  nav.steps::-webkit-scrollbar{display:none}
+  .step:not(.cur){font-size:0;gap:0;padding:8px 6px}
+  .step .dot{font-size:11px}
+  .sep{width:8px;flex-shrink:0}
+  /* 작업 화면: 패널을 세로로 쌓기 */
+  .screen.on{flex-direction:column;overflow-y:auto;overflow-x:hidden}
+  .pl,.pl[style]{width:auto!important;border-right:none;border-bottom:1px solid var(--line);flex-direction:row;flex-wrap:wrap;gap:16px 20px!important;overflow:visible;flex-shrink:0}
+  .pl>*{flex:1 1 220px;min-width:0}
+  .pl .infobox{margin-top:0}
+  .pr{width:auto;border-left:none;border-top:1px solid var(--line);flex-shrink:0}
+  .pr .props{max-height:none}
+  .pr .issues{flex:none}
+  .pr .isslist{max-height:420px}
+  .mapwrap{flex:none;height:64vh;height:64dvh;min-height:360px}
+  [data-screen="3"] .mapwrap,[data-screen="3"] main.mapwrap{height:auto;min-height:0;overflow:visible!important}
+  [data-screen="3"] .pl>div:first-child,[data-screen="3"] #genForm,[data-screen="3"] .pl>div:last-child{flex-basis:100%}
+  #rtLeft>*{flex-basis:100%}
+  .legend{flex-wrap:wrap;left:14px;right:14px;justify-content:center;gap:6px 12px;bottom:52px}
+  .scalebar{display:none}
+  /* 대시보드 */
+  .dwrap{grid-template-columns:minmax(0,1fr);padding:22px 20px 80px}
+  .dwrap>aside{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+  /* 로그인 */
+  .au-side{width:40%;padding:32px}
+  .au-side h1{font-size:26px}
+  .au-flow{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
+@media (max-width:900px){
+  #auth{flex-direction:column}
+  .au-side{width:auto;max-width:none;min-height:0;padding:20px 20px 22px;gap:14px}
+  .au-side h1{font-size:21px}
+  .au-side h1 br{display:none}
+  .au-side p,.au-art,.au-flow,.au-foot{display:none}
+  .au-main{min-height:0;flex:1;align-items:stretch;padding:28px 20px 72px}
+  .au-card,.au-card[style]{width:100%!important;max-width:440px;margin:0 auto}
+}
+
+@media (max-width:760px){
+  body{font-size:14px}
+  header.top{height:52px}
+  header.top .brand small,.ubtn>span:not(.avatar),.ubtn>svg{display:none}
+  header.top .topright{flex-shrink:0}
+  .ubtn{padding:0;height:40px;width:40px;justify-content:center}
+  #wsMembers{display:none}
+  .brand b{font-size:13px}
+  /* 작업 화면 헤더: 2줄 (뒤로·제목·계정 / 단계) */
+  #app>header.top{flex-wrap:wrap;height:auto;padding:8px 12px 0;row-gap:4px}
+  #app>header.top .brand{flex:1}
+  #app>header.top nav.steps{order:3;flex-basis:100%;padding-bottom:6px}
+  #projTitle{max-width:60vw!important}
+  /* 업로드 · 내보내기 */
+  [data-screen="1"]>.scroll,[data-screen="6"]>.scroll,#exMain{padding:18px 16px 80px!important}
+  [data-screen="1"] .card[style*="bluesoft"]{flex-direction:column!important;align-items:stretch!important}
+  [style*="grid-template-columns:repeat(2"],[style*="grid-template-columns:repeat(3"]{grid-template-columns:minmax(0,1fr)!important}
+  [style*="grid-template-columns:repeat(4"]{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #upCheck{overflow-x:auto}
+  .scroll>*,#exMain>*,#genResult>*{flex-shrink:0}
+  /* 3D: 화면을 먼저, 설정은 아래로 */
+  [data-screen="2"] main.mapwrap{order:-1}
+  /* 편집: 층·도구 → 지도 → 속성·이슈 → 레이어 순 */
+  [data-screen="4"] .pl{display:contents}
+  [data-screen="4"] .pl>*{background:#fff;padding:12px 14px 0;flex:none}
+  [data-screen="4"] .pl>div:nth-child(1){order:1}
+  [data-screen="4"] .pl>div:nth-child(3){order:2;padding-bottom:12px;border-bottom:1px solid var(--line)}
+  [data-screen="4"] main.mapwrap{order:3}
+  [data-screen="4"] .pr{order:4}
+  [data-screen="4"] .pl>div:nth-child(2){order:5;padding:14px;border-top:1px solid var(--line)}
+  [data-screen="4"] .pl>.infobox{order:6;margin:0 14px 80px;padding:12px}
+  .tools{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .tool{justify-content:center;flex-direction:column;gap:2px;height:54px;font-size:11px!important;padding:0 4px}
+  .tool kbd{display:none}
+  h1[style*="font-size:24px"]{font-size:20px!important}
+  .drop{flex-direction:column;text-align:center}
+  /* 지도 위 컨트롤 */
+  .maptop{top:10px;left:10px;right:10px;flex-wrap:wrap;gap:8px}
+  .hint span,.hint{display:none}
+  .maptop>div[style*="display:flex"]{margin-left:auto}
+  .legend{display:none}
+  .statbar{gap:12px;overflow-x:auto;white-space:nowrap;padding:0 12px}
+  .pl{padding:14px!important}
+  .pl>*{flex-basis:100%}
+  .tool{height:48px}
+  .btn{min-height:40px}.btn.sm{min-height:34px}
+  .chip{height:36px}
+  .zb{width:40px;height:44px}
+  .mapwrap{height:58vh;height:58dvh;min-height:320px}
+  [data-screen="3"] main.mapwrap{padding:14px 14px 80px!important}
+  /* 대시보드 */
+  .dnav button{padding:0 10px}
+  .dh{flex-wrap:wrap;align-items:flex-start}
+  .dh>div{flex-basis:100%}
+  .dh h1{font-size:21px}
+  .dh .btn.lg{width:100%}
+  .tbar{flex-wrap:wrap}
+  table.members{min-width:0!important}
+  table.members th{white-space:nowrap}
+  table.members th:nth-child(2),table.members td:nth-child(2),table.members th:nth-child(4),table.members td:nth-child(4),table.members th:nth-child(5),table.members td:nth-child(5){display:none}
+  table.members .rolebtn{min-width:96px}
+  table.members td:first-child{padding-left:14px!important}
+  .search{width:100%}
+  .tbar .chips{overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none}
+  .tiles4{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pgrid{grid-template-columns:minmax(0,1fr)}
+  .pnew{min-height:120px;flex-direction:row}
+  .dwrap{padding:18px 16px 80px}
+  /* 모달 → 바텀시트 */
+  .modal-bg{align-items:flex-end;padding:0}
+  .modal{width:100%;max-height:92dvh;border-radius:16px 16px 0 0;padding:20px 16px calc(20px + env(safe-area-inset-bottom))}
+  .modal .row2,.au-card .row2{grid-template-columns:minmax(0,1fr)!important}
+  .modal .foot .btn{flex:1}
+  /* 로그인 */
+  .codebox{gap:6px}.codebox input{flex:1;min-width:0;width:auto;height:54px}
+  .au-legal{bottom:16px}
+  .tin{font-size:16px} /* iOS 확대 방지 */
+  /* 화면 흐름 */
+  #flowBtn{right:12px;bottom:calc(12px + env(safe-area-inset-bottom));height:34px}
+  #flowPanel{right:12px;left:12px;width:auto;bottom:calc(54px + env(safe-area-inset-bottom))}
+  #toast{bottom:64px;max-width:calc(100vw - 32px);text-align:center}
+}
+</style>
+</head>
+<body>
+<!-- 0. 로그인 · 회원가입 -->
+<div id="auth" class="view" hidden>
+  <aside class="au-side">
+    <div class="au-brand">
+      <div class="logo" style="background:#fff"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#1C1D1F" stroke-width="1.6"><circle cx="4" cy="4" r="2"/><circle cx="14" cy="5" r="2"/><circle cx="8" cy="14" r="2"/><path d="M6 4.3h6M5 5.8l2.2 6.4M13 7l-3.8 5.4"/></svg></div>
+      <div><b>실내 길찾기 네트워크</b><small>자동 구축 · 관리 웹 시스템</small></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <h1>공간정보만 올리면,<br>길찾기 네트워크는 자동으로.</h1>
+      <p>SHP·POI 데이터에서 Node/Link 네트워크를 만들고, 웹 지도에서 검수·수정한 뒤 실제 경로 탐색으로 결과를 확인합니다.</p>
+    </div>
+    <svg class="au-art" viewBox="0 0 480 280" role="img" aria-label="실내 평면도 위에 자동 생성된 노드·링크 네트워크와 A에서 B까지의 탐색 경로">
+      <rect x="20" y="130" width="440" height="30" fill="#27282B"/><rect x="250" y="20" width="30" height="240" fill="#27282B"/>
+      <g fill="none" stroke="#46474B" stroke-width="1.5">
+        <rect x="20" y="20" width="440" height="240" rx="2"/>
+        <path d="M20 130H250M280 130H460M20 160H250M280 160H460M250 20V130M280 20V130M250 160V260M280 160V260M90 20V130M160 20V130M360 20V130M120 160V260M370 160V260"/>
+      </g>
+      <g stroke="#5B7FE0" stroke-width="1.2" stroke-dasharray="3 4" opacity=".75">
+        <path d="M55 130V75M125 130V75M205 130V75M320 130V75M410 130V75M55 160V210M185 160V210M320 160V210M410 160V210"/>
+      </g>
+      <g stroke="#5B7FE0" stroke-width="2" stroke-linecap="round" opacity=".85">
+        <path d="M35 145H445M265 35V250M55 145V130M125 145V130M205 145V130M320 145V130M410 145V130M55 145V160M185 145V160M320 145V160M410 145V160"/>
+      </g>
+      <path class="au-route" d="M55 210V145H320V75" fill="none" stroke="#8FB0FF" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <g fill="#1C1D1F" stroke="#8FB0FF" stroke-width="1.8">
+        <circle cx="35" cy="145" r="3.5"/><circle cx="55" cy="145" r="3.5"/><circle cx="125" cy="145" r="3.5"/><circle cx="185" cy="145" r="3.5"/><circle cx="205" cy="145" r="3.5"/><circle cx="265" cy="145" r="3.5"/><circle cx="320" cy="145" r="3.5"/><circle cx="410" cy="145" r="3.5"/><circle cx="445" cy="145" r="3.5"/><circle cx="265" cy="35" r="3.5"/><circle cx="265" cy="250" r="3.5"/>
+      </g>
+      <g fill="#8FB0FF">
+        <rect x="52" y="127" width="6" height="6"/><rect x="122" y="127" width="6" height="6"/><rect x="202" y="127" width="6" height="6"/><rect x="317" y="127" width="6" height="6"/><rect x="407" y="127" width="6" height="6"/>
+        <rect x="52" y="157" width="6" height="6"/><rect x="182" y="157" width="6" height="6"/><rect x="317" y="157" width="6" height="6"/><rect x="407" y="157" width="6" height="6"/>
+      </g>
+      <g fill="#E9E7E1" stroke="#1C1D1F" stroke-width="2">
+        <circle cx="55" cy="75" r="5"/><circle cx="125" cy="75" r="5"/><circle cx="205" cy="75" r="5"/><circle cx="410" cy="75" r="5"/><circle cx="185" cy="210" r="5"/><circle cx="320" cy="210" r="5"/><circle cx="410" cy="210" r="5"/>
+      </g>
+      <circle cx="55" cy="210" r="11" fill="#2F5BD3" stroke="#fff" stroke-width="2.5"/><text x="55" y="214" text-anchor="middle" fill="#fff" font-size="11" font-weight="700">A</text>
+      <circle cx="320" cy="75" r="11" fill="#F2B705" stroke="#fff" stroke-width="2.5"/><text x="320" y="79" text-anchor="middle" fill="#1C1D1F" font-size="11" font-weight="700">B</text>
+      <rect x="400" y="236" width="48" height="16" rx="4" fill="#2F5BD3"/><text x="424" y="248" text-anchor="middle" fill="#fff" font-size="10" font-weight="600" font-family="IBM Plex Mono,monospace">2F</text>
+    </svg>
+    <div class="au-flow"><div><b>01</b>SHP·POI 업로드</div><div><b>02</b>Node/Link 자동 생성</div><div><b>03</b>웹 지도 검수·편집</div><div><b>04</b>길찾기 테스트</div></div>
+    <small class="au-foot">융합 캡스톤디자인 · Web-Based System for Automated Indoor Navigation Network Construction and Management</small>
+  </aside>
+  <main class="au-main" id="auMain"></main>
+</div>
+
+<!-- 0. 프로젝트 목록 · 팀 -->
+<div id="dash" class="view" hidden>
+  <header class="top">
+    <div class="brand">
+      <div class="logo"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#fff" stroke-width="1.6"><circle cx="4" cy="4" r="2"/><circle cx="14" cy="5" r="2"/><circle cx="8" cy="14" r="2"/><path d="M6 4.3h6M5 5.8l2.2 6.4M13 7l-3.8 5.4"/></svg></div>
+      <div><b>실내 길찾기 네트워크</b><small>자동 구축 · 관리 웹 시스템</small></div>
+    </div>
+    <nav class="dnav" id="dNav" aria-label="메뉴"></nav>
+    <div class="topright" id="dUser"></div>
+  </header>
+  <div class="scroll" style="flex:1"><div id="dMain"></div></div>
+</div>
+<div id="modal"></div>
+<button id="flowBtn" data-act="flow" aria-expanded="false" aria-controls="flowPanel">화면 흐름 <span class="mono" id="flowPos"></span></button>
+<div id="flowPanel" hidden></div>
+<div id="app" class="view" hidden>
+<header class="top">
+  <div class="brand">
+    <button class="backbtn" data-act="toProjects" title="프로젝트 목록으로" aria-label="프로젝트 목록으로"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg></button>
+    <div style="min-width:0"><b id="projTitle" class="ell" style="max-width:210px">실내 길찾기 네트워크</b><small id="projName">프로젝트 없음</small></div>
+  </div>
+  <nav class="steps" id="steps" aria-label="작업 단계"></nav>
+  <div class="topright"><span id="saveState">저장 전</span><div id="wsMembers"></div><div id="wsUser"></div></div>
+</header>
+
+<!-- 1. 업로드 -->
+<section class="screen" data-screen="1">
+  <div class="scroll" style="flex:1;padding:24px 40px 32px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;align-items:flex-end;gap:16px">
+      <div style="flex:1"><h1 style="margin:0;font-size:24px">데이터 업로드</h1>
+        <p class="muted" style="margin:4px 0 0;font-size:14px">층별 공간정보(SHP·GeoJSON)와 POI(CSV·GeoJSON)를 올리면 좌표계·공간 유형·층 정보를 확인합니다.</p></div>
+    </div>
+    <div class="card" style="flex-direction:row;align-items:center;gap:16px;background:var(--bluesoft);border-color:#C9D6F5">
+      <div style="flex:1"><b style="font-size:14px">샘플로 바로 시작하기</b>
+        <div class="muted" style="margin-top:2px">가상의 공학관 1F–3F 데이터(공간 39개, 출입문 32개, POI 33개)입니다. 실제 데이터에서 자주 생기는 오류를 일부 포함하고 있습니다.</div></div>
+      <button class="btn" data-act="dlSample">샘플 파일 내려받기 (GeoJSON + CSV)</button>
+      <button class="btn pri lg" data-act="loadSample">샘플 프로젝트 불러오기</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px;align-items:start">
+      <section class="card">
+        <div style="display:flex;align-items:center;gap:8px"><h2>공간정보</h2><span class="badge b-blue">필수</span><span class="muted" style="margin-left:auto;font-size:12px">.zip(SHP 묶음) · .geojson</span></div>
+        <label class="drop" id="dropSp">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5F5D57" stroke-width="1.6" stroke-linecap="round"><path d="M14 18V5M9 10l5-5 5 5M5 18v4h18v-4"/></svg>
+          <div style="flex:1"><b>파일을 끌어다 놓거나 클릭해 선택</b><div class="muted" style="font-size:12px">SHP는 .shp·.shx·.dbf·.prj를 하나의 .zip으로 묶어 주세요. DWG는 DXF→SHP 변환 후 사용 (캡스톤디자인2 지원 예정)</div></div>
+          <input type="file" id="fileSp" accept=".zip,.geojson,.json" hidden>
+        </label>
+        <div id="spInfo"></div>
+      </section>
+      <section class="card">
+        <div style="display:flex;align-items:center;gap:8px"><h2>POI 데이터</h2><span class="badge b-blue">필수</span><span class="muted" style="margin-left:auto;font-size:12px">.csv · .geojson</span></div>
+        <label class="drop" id="dropPoi">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="#5F5D57" stroke-width="1.6" stroke-linecap="round"><path d="M14 18V5M9 10l5-5 5 5M5 18v4h18v-4"/></svg>
+          <div style="flex:1"><b>파일을 끌어다 놓거나 클릭해 선택</b><div class="muted" style="font-size:12px">CSV는 UTF-8·CP949 모두 인식합니다. 이름·분류·층·X·Y 열이 필요합니다.</div></div>
+          <input type="file" id="filePoi" accept=".csv,.geojson,.json" hidden>
+        </label>
+        <div id="poiInfo"></div>
+      </section>
+    </div>
+    <section class="card" id="upCheck"></section>
+  </div>
+</section>
+
+<!-- 2. 3D -->
+<section class="screen" data-screen="2">
+  <aside class="pl">
+    <div><h3 class="h3">초점 층</h3><div class="chips" id="v3Floors"></div><p class="muted" style="margin:8px 0 0;font-size:12px">초점 층 외의 층은 반투명하게 표시됩니다.</p></div>
+    <div style="display:flex;flex-direction:column;gap:12px"><h3 class="h3" style="margin:0">형상</h3>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between"><span>벽 높이</span><span class="mono" id="v3WallV">2.0 m</span></span><input class="rng" type="range" id="v3Wall" min="0.5" max="5" step="0.5" value="2"></label>
+      <label style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between"><span>층 간격 (분해 보기)</span><span class="mono" id="v3GapV">2.5×</span></span><input class="rng" type="range" id="v3Gap" min="1" max="5" step="0.5" value="2.5"></label>
+    </div>
+    <div><h3 class="h3">표시 요소</h3>
+      <label class="chk"><input type="checkbox" data-v3="net" checked>노드·링크 네트워크</label>
+      <label class="chk"><input type="checkbox" data-v3="vert" checked>층간 수직 연결</label>
+      <label class="chk"><input type="checkbox" data-v3="poi" checked>POI</label>
+      <label class="chk"><input type="checkbox" data-v3="route" checked>마지막 테스트 경로</label>
+    </div>
+    <div><h3 class="h3">카메라</h3><div class="chips"><button class="chip" data-act="cam" data-v="iso">등각</button><button class="chip" data-act="cam" data-v="top">위에서</button><button class="chip" data-act="cam" data-v="front">정면</button></div></div>
+    <div class="infobox">드래그: 회전 · 휠: 확대 · 오른쪽 드래그: 이동<br>층별 공간 폴리곤의 경계를 벽으로 세우고, 출입문 위치는 비워 둡니다.</div>
+  </aside>
+  <main class="mapwrap">
+    <div class="maptop"><div class="hint"><b>3D 보기</b><span>층별 공간과 층간 연결을 입체로 확인</span></div>
+      <div class="seg"><button data-go="4">2D 편집</button><button class="on">3D 보기</button></div></div>
+    <div id="v3dHost"><div class="empty" id="v3Empty" hidden></div></div>
+  </main>
+  <aside class="pr"><div class="scroll" style="padding:16px;display:flex;flex-direction:column;gap:18px" id="v3Side"></div></aside>
+</section>
+
+<!-- 3. 생성 -->
+<section class="screen" data-screen="3">
+  <aside class="pl" style="width:380px;padding:22px;gap:16px">
+    <div><h1 style="margin:0;font-size:20px">네트워크 생성</h1><p class="muted" style="margin:4px 0 0">공간 폴리곤에서 노드·링크를 자동으로 만듭니다.</p></div>
+    <div id="genForm" style="display:flex;flex-direction:column;gap:14px"></div>
+    <div style="margin-top:auto;display:flex;gap:8px"><button class="btn" data-act="genDefault">기본값</button><button class="btn pri lg" style="flex:1" data-act="generate">네트워크 생성 실행</button></div>
+  </aside>
+  <main class="mapwrap" style="padding:22px 28px;gap:16px;overflow:auto">
+    <div id="genResult" style="display:flex;flex-direction:column;gap:16px;flex:1;min-height:0"></div>
+  </main>
+</section>
+
+<!-- 4. 편집 -->
+<section class="screen" data-screen="4">
+  <aside class="pl">
+    <div><h3 class="h3">층</h3><div class="chips" id="edFloors"></div></div>
+    <div><h3 class="h3">레이어</h3><div id="edLayers"></div></div>
+    <div><h3 class="h3">편집 도구</h3>
+      <div class="tools" id="edTools"></div>
+      <div style="display:flex;gap:6px;margin-top:6px"><button class="btn" style="flex:1" data-act="undo">되돌리기</button><button class="btn" style="flex:1" data-act="redo">다시 실행</button></div>
+    </div>
+    <div class="infobox" id="edInfo"></div>
+  </aside>
+  <main class="mapwrap">
+    <div class="maptop">
+      <div class="hint" id="edHint"></div>
+      <div style="display:flex;gap:8px">
+        <div class="seg"><button class="on">2D 편집</button><button data-go="2">3D 보기</button></div>
+        <div class="zoom"><button class="zb" data-act="zoom" data-v="0.8" aria-label="축소">−</button><span class="mono" id="edZoom" style="font-size:12px;width:46px;text-align:center">100%</span><button class="zb" data-act="zoom" data-v="1.25" aria-label="확대">+</button><button class="zb" data-act="fit" aria-label="전체 보기"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button></div>
+      </div>
+    </div>
+    <svg class="mapsvg" id="edSvg" style="padding-top:0"></svg>
+    <div class="scalebar" id="edScale"><div style="width:100px"></div><span class="mono">0 — 10 m</span></div>
+    <div class="legend">
+      <span><i style="width:9px;height:9px;border-radius:50%;border:2px solid var(--blue)"></i>노드</span>
+      <span><i style="width:8px;height:8px;background:var(--blue)"></i>출입문</span>
+      <span><i style="width:18px;height:2.5px;background:var(--blue)"></i>링크</span>
+      <span><i style="width:18px;border-top:1.5px dashed var(--blue)"></i>POI 연결</span>
+      <span><i style="width:10px;height:10px;border-radius:50%;background:var(--ink)"></i>POI</span>
+      <span><i style="width:12px;height:12px;border-radius:50%;border:2px solid #6B4FBB"></i>층간 연결</span>
+      <span><i style="width:12px;height:12px;border-radius:50%;border:1.5px dashed var(--err)"></i>이슈</span>
+    </div>
+    <footer class="statbar" id="edStat"></footer>
+    <div class="empty" id="edEmpty" hidden></div>
+  </main>
+  <aside class="pr">
+    <section class="props" id="edProps"></section>
+    <section class="issues">
+      <div style="display:flex;align-items:center;justify-content:space-between"><h2 style="margin:0;font-size:14px">검수 이슈 <span class="mono" style="color:var(--err)" id="issCount">0</span></h2><button class="btn sm" data-act="revalidate">검수 다시 실행</button></div>
+      <div class="chips" id="issFilter"></div>
+      <div class="isslist" id="issList"></div>
+    </section>
+  </aside>
+</section>
+
+<!-- 5. 길찾기 -->
+<section class="screen" data-screen="5">
+  <aside class="pl" style="width:340px;gap:14px" id="rtLeft"></aside>
+  <main class="mapwrap">
+    <div class="maptop"><div class="chips" id="rtFloors" style="background:#fff;border:1px solid var(--line);border-radius:8px;padding:4px"></div>
+      <div class="seg"><button class="on">2D</button><button data-go="2">3D</button></div></div>
+    <svg class="mapsvg" id="rtSvg"></svg>
+    <div class="empty" id="rtEmpty" hidden></div>
+  </main>
+  <aside class="pr"><div class="scroll" style="padding:16px;display:flex;flex-direction:column;gap:16px" id="rtRight"></div></aside>
+</section>
+
+<!-- 6. 내보내기 -->
+<section class="screen" data-screen="6">
+  <div class="scroll" style="flex:1;padding:24px 40px;display:flex;flex-direction:column;gap:18px" id="exMain"></div>
+</section>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   실내 길찾기 네트워크 빌더 — 단일 파일 프로토타입
+   좌표 단위: m, y축 위쪽(+) 기준. 화면 변환은 VIEWS에서 처리.
+   ===================================================================== */
+const $=(s,r=document)=>r.querySelector(s);
+const $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=(v,d=1)=>Number(v).toFixed(d);
+const toast=(m)=>{if(window.__quiet)return;const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2400);};
+
+/* ---------------- 상태 ---------------- */
+const DEF_PARAMS={method:'center',spacing:15,grid:3,snap:0.5,doorDist:10,poiDist:10,poiAuto:true,vertical:true};
+function emptyState(){return{meta:{name:'새 프로젝트',offset:[0,0],crs:'-'},floors:[],spaces:[],doors:[],pois:[],nodes:[],links:[],ignored:{},params:{...DEF_PARAMS},seq:{n:1,l:1},gen:null};}
+let S=emptyState();
+const UI={step:1,floor:null,tool:'select',sel:null,issue:null,filter:'all',
+  layers:{space:true,wall:true,link:true,node:true,poi:true,issue:true},
+  pendingLink:null,cursor:null,route:null,routeFloor:null,history:[],reach:null,wheel:false,genFloor:null};
+let ISSUES=[];let NI=new Map();
+let undoStack=[],redoStack=[];
+const VIEWS={};
+const reindex=()=>{NI=new Map(S.nodes.map(n=>[n.id,n]));};
+const nid=()=>'N-'+String(S.seq.n++).padStart(4,'0');
+const lid=()=>'L-'+String(S.seq.l++).padStart(4,'0');
+const floorNum=f=>{const s=String(f).toUpperCase();let m=s.match(/^B(\d+)/);if(m)return -(+m[1]);m=s.match(/(\d+)/);return m?+m[1]:0;};
+const sortedFloors=()=>[...S.floors].sort((a,b)=>floorNum(a.id)-floorNum(b.id));
+const TYPE_KO={corridor:'복도',door:'출입문 연결',poi:'POI 연결',stair:'계단',ev:'엘리베이터',room:'실'};
+const NTYPE_KO={corridor:'복도 노드',door:'출입문 노드',poi:'POI 노드'};
+
+/* ---------------- 기하 ---------------- */
+const d2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+function pip(p,poly){let x=p[0],y=p[1],inside=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i][0],yi=poly[i][1],xj=poly[j][0],yj=poly[j][1];if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;}return inside;}
+function proj(p,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],L=dx*dx+dy*dy;let t=L?((p[0]-a[0])*dx+(p[1]-a[1])*dy)/L:0;t=Math.max(0,Math.min(1,t));const q=[a[0]+t*dx,a[1]+t*dy];return{t,q,d:d2(p,q)};}
+function segX(a,b,c,d){const r=[b[0]-a[0],b[1]-a[1]],s=[d[0]-c[0],d[1]-c[1]];const den=r[0]*s[1]-r[1]*s[0];if(Math.abs(den)<1e-9)return null;const q=[c[0]-a[0],c[1]-a[1]];return{t:(q[0]*s[1]-q[1]*s[0])/den,u:(q[0]*r[1]-q[1]*r[0])/den};}
+function bbox(pts){let a=Infinity,b=Infinity,c=-Infinity,d=-Infinity;for(const p of pts){if(p[0]<a)a=p[0];if(p[1]<b)b=p[1];if(p[0]>c)c=p[0];if(p[1]>d)d=p[1];}return[a,b,c,d];}
+const edgesOf=poly=>poly.map((p,i)=>[p,poly[(i+1)%poly.length]]);
+const distToPolyEdge=(p,poly)=>Math.min(...edgesOf(poly).map(([a,b])=>proj(p,a,b).d));
+const nearest=(n,list)=>{let best=null,bd=Infinity;for(const m of list){if(m===n)continue;const d=Math.hypot(m.x-n.x,m.y-n.y);if(d<bd){bd=d;best=m;}}return best;};
+function linkLen(l){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b)return 0;if(a.floor!==b.floor){const fa=S.floors.find(f=>f.id===a.floor),fb=S.floors.find(f=>f.id===b.floor);return Math.abs((fa?.elev||0)-(fb?.elev||0))||3.6;}return Math.hypot(a.x-b.x,a.y-b.y);}
+function linkCost(l){const L=linkLen(l);if(l.type==='stair')return L*2.5;if(l.type==='ev')return L+15;return L;}
+
+/* ---------------- 샘플 데이터 ---------------- */
+function guessCat(n){if(/계단|엘리베이터|승강/.test(n))return'층간 이동';if(/화장실|카페|편의|휴게/.test(n))return'편의시설';if(/강의|세미나|실습|강당/.test(n))return'강의실';if(/연구|교수|행정|학생회|회의/.test(n))return'업무·연구';return'기타';}
+function mkPoi(id,floor,name,x,y,cat){const kind=/계단|stair/i.test(name)?'stair':/엘리베이터|승강|elev|\bEV\b/i.test(name)?'ev':'normal';return{id,floor,name,cat:cat||guessCat(name),kind,x,y};}
+function sampleState(){
+  const st=emptyState();st.meta={name:'공학관 (샘플)',offset:[212380,551860],crs:'EPSG:5186 (샘플 좌표)'};
+  st.floors=[{id:'1F',elev:0,height:4.2},{id:'2F',elev:4.2,height:3.6},{id:'3F',elev:7.8,height:3.6}];
+  const R=(x0,y0,x1,y1)=>[[x0,y0],[x1,y0],[x1,y1],[x0,y1]];
+  const TOP=[[0,13],[13,26],[26,38],[46,60],[60,72],[72,82]],BOT=[[0,13],[13,38],[46,60],[60,72],[72,82]];
+  const TD=[6.5,19.5,32,53,66,77],BD=[6.5,25.5,53,66,77];
+  const N={'1F':['로비','행정실','학생회실','카페','편의점','계단 A','창고','대강당','화장실(여)','화장실(남)','엘리베이터 1'],
+           '2F':['연구실 201','연구실 202','세미나실','교수실','회의실','계단 A','창고','강의실 210','화장실(여)','화장실(남)','엘리베이터 1'],
+           '3F':['연구실 301','연구실 302','실습실','교수실 2','휴게실','계단 A','창고','강의실 310','화장실(여)','화장실(남)','엘리베이터1']};
+  let sid=1,did=1,pid=1;
+  for(const f of st.floors){
+    const nm=N[f.id];
+    st.spaces.push({id:'S'+sid++,floor:f.id,type:'corridor',name:'복도(동서)',poly:R(0,26,82,34)});
+    st.spaces.push({id:'S'+sid++,floor:f.id,type:'corridor',name:'복도(남북)',poly:R(38,0,46,60)});
+    TOP.forEach(([a,b],i)=>st.spaces.push({id:'S'+sid++,floor:f.id,type:i===5?'stair':'room',name:nm[i],poly:R(a,34,b,60)}));
+    BOT.forEach(([a,b],i)=>st.spaces.push({id:'S'+sid++,floor:f.id,type:i===4?'ev':'room',name:nm[6+i],poly:R(a,0,b,26)}));
+    TD.forEach(x=>st.doors.push({id:'D'+did++,floor:f.id,x,y:34}));
+    BD.forEach(x=>{if(f.id==='2F'&&x===53)return;st.doors.push({id:'D'+did++,floor:f.id,x,y:26});}); // 2F 화장실(여) 출입문 누락 (의도된 데이터 오류)
+    TD.forEach((x,i)=>st.pois.push(mkPoi('P'+pid++,f.id,nm[i],x,47)));
+    BD.forEach((x,i)=>st.pois.push(mkPoi('P'+pid++,f.id,nm[6+i],x,13)));
+  }
+  return st;
+}
+function sampleFiles(){
+  const st=sampleState();const[ox,oy]=st.meta.offset;const T={corridor:'CORRIDOR',room:'ROOM',stair:'STAIR',ev:'EV'};
+  const feats=st.spaces.map(s=>({type:'Feature',properties:{SPACE_TYPE:T[s.type],FLOOR:s.floor,NAME:s.name},geometry:{type:'Polygon',coordinates:[[...s.poly,s.poly[0]].map(p=>[+(p[0]+ox).toFixed(2),+(p[1]+oy).toFixed(2)])]}}))
+    .concat(st.doors.map(d=>({type:'Feature',properties:{SPACE_TYPE:'DOOR',FLOOR:d.floor,NAME:''},geometry:{type:'Point',coordinates:[+(d.x+ox).toFixed(2),+(d.y+oy).toFixed(2)]}})));
+  const csv='NAME,CATEGORY,FLOOR,X_COORD,Y_COORD\n'+st.pois.map(p=>[p.name,p.cat==='기타'?'':p.cat,p.floor,(p.x+ox).toFixed(2),(p.y+oy).toFixed(2)].join(',')).join('\n');
+  download('공학관_공간정보_샘플.geojson',JSON.stringify({type:'FeatureCollection',features:feats}),'application/geo+json');
+  setTimeout(()=>download('공학관_POI_샘플.csv','﻿'+csv,'text/csv'),400);
+}
+function download(name,text,type){const b=text instanceof Blob?text:new Blob([text],{type});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove();},1000);}
+
+/* ---------------- 네트워크 생성 ---------------- */
+function addNode(floor,x,y,type,extra={}){const n={id:nid(),floor,x,y,type,src:'auto',...extra};S.nodes.push(n);NI.set(n.id,n);return n;}
+function snapNode(floor,x,y,tol){for(const n of S.nodes){if(n.floor===floor&&n.type==='corridor'&&Math.hypot(n.x-x,n.y-y)<=tol)return n;}return addNode(floor,x,y,'corridor');}
+function addLink(a,b,type,extra={}){if(!a||!b||a.id===b.id)return null;if(S.links.some(l=>(l.a===a.id&&l.b===b.id)||(l.a===b.id&&l.b===a.id)))return null;const l={id:lid(),a:a.id,b:b.id,type,bidir:true,wheel:type!=='stair',src:'auto',...extra};S.links.push(l);return l;}
+
+function genCenterline(f,P){
+  const cors=S.spaces.filter(s=>s.floor===f&&s.type==='corridor');
+  const segs=cors.map(c=>{const[x0,y0,x1,y1]=bbox(c.poly);const w=x1-x0,h=y1-y0;
+    if(w>=h){const y=(y0+y1)/2,m=Math.min(h/2,w/2-0.01);return{a:[x0+m,y],b:[x1-m,y],hw:h/2,ts:[0,1]};}
+    const x=(x0+x1)/2,m=Math.min(w/2,h/2-0.01);return{a:[x,y0+m],b:[x,y1-m],hw:w/2,ts:[0,1]};});
+  const extra=[];
+  for(let i=0;i<segs.length;i++)for(let j=i+1;j<segs.length;j++){
+    const A=segs[i],B=segs[j];const r=segX(A.a,A.b,B.a,B.b);const e=1e-6;
+    if(r&&r.t>=-e&&r.t<=1+e&&r.u>=-e&&r.u<=1+e){A.ts.push(Math.min(1,Math.max(0,r.t)));B.ts.push(Math.min(1,Math.max(0,r.u)));continue;}
+    for(const[X,Y]of[[A,B],[B,A]])for(const ep of[X.a,X.b]){const pr=proj(ep,Y.a,Y.b);if(pr.d>1e-6&&pr.d<=X.hw+Y.hw+0.5){Y.ts.push(pr.t);extra.push([ep,pr.q]);}}
+  }
+  const doorLinks=[];
+  for(const d of S.doors.filter(d=>d.floor===f)){let best=null;for(const s of segs){const pr=proj([d.x,d.y],s.a,s.b);if(!best||pr.d<best.pr.d)best={s,pr};}
+    if(best&&best.pr.d<=P.doorDist){best.s.ts.push(best.pr.t);doorLinks.push([d,best.pr.q]);}}
+  for(const s of segs){
+    const L=d2(s.a,s.b);const ts=[...new Set(s.ts.map(t=>+t.toFixed(6)))].sort((a,b)=>a-b);
+    const pts=[];for(const t of ts){const p=[s.a[0]+(s.b[0]-s.a[0])*t,s.a[1]+(s.b[1]-s.a[1])*t];if(pts.length&&d2(pts[pts.length-1],p)<P.snap)continue;pts.push(p);}
+    const full=[];for(let i=0;i<pts.length;i++){if(i>0&&P.spacing>0){const g=d2(pts[i-1],pts[i]);const k=Math.floor(g/P.spacing);for(let j=1;j<=k;j++){const t=j/(k+1);full.push([pts[i-1][0]+(pts[i][0]-pts[i-1][0])*t,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*t]);}}full.push(pts[i]);}
+    let prev=null;for(const p of full){const n=snapNode(f,p[0],p[1],Math.max(P.snap,0.05));if(prev)addLink(prev,n,'corridor');prev=n;}
+    if(L<0.01&&!full.length)snapNode(f,s.a[0],s.a[1],P.snap);
+  }
+  for(const[ep,q]of extra)addLink(snapNode(f,ep[0],ep[1],Math.max(P.snap,0.05)),snapNode(f,q[0],q[1],Math.max(P.snap,0.05)),'corridor');
+  for(const[d,q]of doorLinks){const dn=addNode(f,d.x,d.y,'door',{doorId:d.id});addLink(dn,snapNode(f,q[0],q[1],Math.max(P.snap,0.05)),'door');}
+}
+function genGrid(f,P){
+  const cors=S.spaces.filter(s=>s.floor===f&&s.type==='corridor');if(!cors.length)return;
+  const[x0,y0]=bbox(cors.flatMap(c=>c.poly));const g=Math.max(0.5,P.grid);const map=new Map();
+  for(const c of cors){const[a,b,cx,dy]=bbox(c.poly);
+    for(let i=Math.floor((a-x0)/g);x0+(i+.5)*g<=cx;i++)for(let j=Math.floor((b-y0)/g);y0+(j+.5)*g<=dy;j++){
+      const x=x0+(i+.5)*g,y=y0+(j+.5)*g;if(x<a||y<b)continue;if(pip([x,y],c.poly)){const k=i+','+j;if(!map.has(k))map.set(k,addNode(f,x,y,'corridor'));}}}
+  const inCor=p=>cors.some(c=>pip(p,c.poly));
+  for(const[k,n]of map){const[i,j]=k.split(',').map(Number);for(const[di,dj]of[[1,0],[0,1]]){const m=map.get((i+di)+','+(j+dj));if(m&&inCor([(n.x+m.x)/2,(n.y+m.y)/2]))addLink(n,m,'corridor');}}
+  const cn=[...map.values()];
+  for(const d of S.doors.filter(d=>d.floor===f)){const dn={x:d.x,y:d.y};const t=nearest(dn,cn);if(t&&Math.hypot(t.x-d.x,t.y-d.y)<=P.doorDist){const n=addNode(f,d.x,d.y,'door',{doorId:d.id});addLink(n,t,'door');}}
+}
+function roomOf(f,x,y){return S.spaces.find(s=>s.floor===f&&s.type!=='corridor'&&pip([x,y],s.poly));}
+function connectPois(f,P){
+  const doorNodes=S.nodes.filter(n=>n.floor===f&&n.type==='door');
+  for(const p of S.pois.filter(p=>p.floor===f)){
+    const pn=addNode(f,p.x,p.y,'poi',{poiId:p.id,name:p.name,kind:p.kind});
+    if(!P.poiAuto)continue;
+    const room=roomOf(f,p.x,p.y);let t=null;
+    if(room){t=nearest(pn,doorNodes.filter(d=>distToPolyEdge([d.x,d.y],room.poly)<0.6));}
+    else{t=nearest(pn,S.nodes.filter(n=>n.floor===f&&n.type!=='poi'&&Math.hypot(n.x-p.x,n.y-p.y)<=P.poiDist));}
+    if(t)addLink(pn,t,'poi');
+  }
+}
+function connectVertical(){
+  const fl=sortedFloors();
+  for(let i=0;i<fl.length-1;i++){
+    const A=S.nodes.filter(n=>n.floor===fl[i].id&&n.type==='poi'&&n.kind!=='normal');
+    const B=S.nodes.filter(n=>n.floor===fl[i+1].id&&n.type==='poi'&&n.kind!=='normal');
+    for(const a of A){const b=B.find(b=>b.kind===a.kind&&b.name===a.name);if(b)addLink(a,b,a.kind);}
+  }
+}
+function generate(){
+  if(!S.floors.length){toast('먼저 데이터를 불러오세요');return;}
+  const P=S.params;S.nodes=[];S.links=[];S.seq={n:1,l:1};S.ignored={};NI=new Map();undoStack=[];redoStack=[];UI.sel=null;UI.issue=null;UI.route=null;UI.pendingLink=null;
+  const log=[];const T=(label,fn)=>{const a=performance.now();const r=fn();log.push({label:typeof label==='function'?label(r):label,ms:performance.now()-a});};
+  const t0=performance.now();const fl=sortedFloors();
+  T(()=>`통행 공간 ${S.spaces.filter(s=>s.type==='corridor').length}개에서 ${P.method==='center'?'복도 중심선':'격자'} 네트워크 생성`,()=>fl.forEach(f=>P.method==='center'?genCenterline(f.id,P):genGrid(f.id,P)));
+  T(()=>`출입문 노드 ${S.nodes.filter(n=>n.type==='door').length}개 연결 (데이터상 출입문 ${S.doors.length}개)`,()=>0);
+  T(()=>{const c=S.links.filter(l=>l.type==='poi').length;return`POI 연결 ${c}/${S.pois.length}`;},()=>fl.forEach(f=>connectPois(f.id,P)));
+  if(P.vertical)T(()=>`층간 연결 ${S.links.filter(l=>l.type==='stair'||l.type==='ev').length}개 생성 (이름 일치 기준)`,()=>connectVertical());
+  T(()=>`검수 규칙 6종 실행 → 이슈 ${ISSUES.length}건`,()=>validate());
+  S.gen={ms:performance.now()-t0,log,method:P.method,at:Date.now()};
+  const byFloor={};ISSUES.forEach(i=>byFloor[i.floor]=(byFloor[i.floor]||0)+1);
+  UI.floor=Object.keys(byFloor).sort((a,b)=>byFloor[b]-byFloor[a])[0]||fl[0].id;UI.genFloor=UI.floor;
+  delete VIEWS.edSvg;delete VIEWS.genSvg;T3.dirty=true;save();render();toast(`노드 ${S.nodes.length}개 · 링크 ${S.links.length}개 생성 완료`);
+}
+
+/* ---------------- 검수 ---------------- */
+const RULES={'R-01':{name:'고립 노드',sev:'warn'},'R-02':{name:'POI 미연결',sev:'err'},'R-03':{name:'벽 관통 링크',sev:'err'},'R-04':{name:'중복 노드',sev:'warn'},'R-05':{name:'층간 연결 누락',sev:'err'},'R-06':{name:'분리된 네트워크',sev:'warn'}};
+function mkIssue(code,floor,x,y,ids,target,desc,fix){return{code,key:code+':'+ids.join(','),sev:RULES[code].sev,rule:RULES[code].name,floor,x,y,ids,target,desc,fix};}
+function wallEdges(f){return S.spaces.filter(s=>s.floor===f&&s.type!=='corridor').flatMap(s=>edgesOf(s.poly));}
+function suggestVertical(n){const fl=sortedFloors().map(f=>f.id);const i=fl.indexOf(n.floor);const adj=[fl[i-1],fl[i+1]].filter(Boolean);
+  const linked=new Set(S.links.filter(l=>l.a===n.id||l.b===n.id).map(l=>l.a===n.id?l.b:l.a));
+  const c=S.nodes.filter(m=>adj.includes(m.floor)&&m.type==='poi'&&m.kind===n.kind&&!linked.has(m.id)&&Math.hypot(m.x-n.x,m.y-n.y)<=5);return nearest(n,c);}
+function validate(){
+  reindex();const iss=[];const deg=new Map(S.nodes.map(n=>[n.id,0])),vdeg=new Map(S.nodes.map(n=>[n.id,0]));
+  for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b)continue;deg.set(a.id,deg.get(a.id)+1);deg.set(b.id,deg.get(b.id)+1);if(a.floor!==b.floor){vdeg.set(a.id,vdeg.get(a.id)+1);vdeg.set(b.id,vdeg.get(b.id)+1);}}
+  for(const n of S.nodes){if(deg.get(n.id))continue;
+    if(n.type==='poi'){const room=roomOf(n.floor,n.x,n.y);const hasDoor=room&&S.nodes.some(d=>d.floor===n.floor&&d.type==='door'&&distToPolyEdge([d.x,d.y],room.poly)<0.6);
+      iss.push(mkIssue('R-02',n.floor,n.x,n.y,[n.id],`${n.id} · ${n.name||''}`,room&&!hasDoor?`'${room.name||'이 공간'}'에 출입문 데이터가 없어 POI를 네트워크에 연결하지 못했습니다. 이 POI를 목적지로 하는 경로를 만들 수 없습니다.`:'POI에서 네트워크로 이어지는 링크가 없습니다.',room&&!hasDoor?'복도와 가장 가까운 벽 위치에 출입문 노드를 만들고 POI와 복도를 연결합니다.':'가장 가까운 출입문(없으면 복도) 노드와 POI 연결 링크를 만듭니다.'));}
+    else iss.push(mkIssue('R-01',n.floor,n.x,n.y,[n.id],n.id,'연결된 링크가 하나도 없는 노드입니다. 경로 계산에 쓰이지 않습니다.','노드를 삭제합니다.'));}
+  const WE={};S.floors.forEach(f=>WE[f.id]=wallEdges(f.id));
+  for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b||a.floor!==b.floor)continue;const L=Math.hypot(a.x-b.x,a.y-b.y);if(L<0.01)continue;const eps=0.3/L;
+    for(const[c,d]of WE[a.floor]||[]){const r=segX([a.x,a.y],[b.x,b.y],c,d);if(r&&r.t>eps&&r.t<1-eps&&r.u>-1e-6&&r.u<1+1e-6){const x=a.x+(b.x-a.x)*r.t,y=a.y+(b.y-a.y)*r.t;iss.push(mkIssue('R-03',a.floor,x,y,[l.id],`${l.id} · ${a.id} → ${b.id}`,'링크가 벽을 가로지릅니다. 출입문을 거치지 않는 잘못된 경로가 만들어집니다.','링크를 삭제합니다. 필요하면 출입문 노드를 거쳐 다시 연결하세요.'));break;}}}
+  const tol=Math.max(0.5,S.params.snap*2);
+  for(const f of S.floors){const ns=S.nodes.filter(n=>n.floor===f.id&&n.type!=='poi');for(let i=0;i<ns.length;i++)for(let j=i+1;j<ns.length;j++){const d=Math.hypot(ns[i].x-ns[j].x,ns[i].y-ns[j].y);if(d<tol)iss.push(mkIssue('R-04',f.id,(ns[i].x+ns[j].x)/2,(ns[i].y+ns[j].y)/2,[ns[i].id,ns[j].id],`${ns[i].id} · ${ns[j].id}`,`${fmt(d,2)} m 거리에 노드 2개가 겹쳐 있습니다 (병합 기준 ${fmt(tol,1)} m).`,'두 노드를 하나로 병합하고 연결된 링크를 옮깁니다.'));}}
+  if(S.floors.length>1)for(const n of S.nodes){if(n.type!=='poi'||n.kind==='normal'||vdeg.get(n.id))continue;const t=suggestVertical(n);
+    const mism=t&&t.name!==n.name?` 인접 층의 '${t.name}'과 이름이 달라('${n.name}' ≠ '${t.name}') 자동 매칭되지 않았습니다.`:'';
+    iss.push(mkIssue('R-05',n.floor,n.x,n.y,[n.id],`${n.id} · ${n.name}`,`${n.kind==='ev'?'엘리베이터':'계단'} 노드에 다른 층과 이어지는 수직 링크가 없습니다.`+mism,t?`${t.floor} '${t.name}'(${t.id})과 수직 링크를 만듭니다.`:'같은 위치(5 m 이내)의 인접 층 노드를 찾지 못했습니다. 링크 도구로 직접 연결하세요.'));}
+  const par=new Map(S.nodes.map(n=>[n.id,n.id]));const find=x=>{while(par.get(x)!==x){par.set(x,par.get(par.get(x)));x=par.get(x);}return x;};
+  for(const l of S.links){if(NI.get(l.a)&&NI.get(l.b))par.set(find(l.a),find(l.b));}
+  const comps=new Map();for(const n of S.nodes){if(!deg.get(n.id))continue;const r=find(n.id);if(!comps.has(r))comps.set(r,[]);comps.get(r).push(n);}
+  const cl=[...comps.values()].sort((a,b)=>b.length-a.length);
+  for(const c of cl.slice(1)){const n=c[0];iss.push(mkIssue('R-06',n.floor,n.x,n.y,c.map(m=>m.id),`${c.length}개 노드 (${n.floor})`,`주 네트워크와 이어지지 않은 네트워크 조각입니다. 조각 안의 POI로는 다른 곳에서 갈 수 없습니다.`,'조각과 주 네트워크에서 가장 가까운 두 노드를 복도 링크로 연결합니다.'));}
+  ISSUES=iss.filter(i=>!S.ignored[i.key]);
+  const order={err:0,warn:1};ISSUES.sort((a,b)=>order[a.sev]-order[b.sev]||a.code.localeCompare(b.code));
+}
+function fixIssue(is){
+  pushUndo();let ok=true;
+  switch(is.code){
+    case'R-01':deleteNode(is.ids[0]);break;
+    case'R-02':{const n=NI.get(is.ids[0]);const room=roomOf(n.floor,n.x,n.y);const doors=room?S.nodes.filter(d=>d.floor===n.floor&&d.type==='door'&&distToPolyEdge([d.x,d.y],room.poly)<0.6):[];
+      if(doors.length){addLink(n,nearest(n,doors),'poi',{src:'manual'});break;}
+      const cor=S.nodes.filter(m=>m.floor===n.floor&&m.type==='corridor');const c=nearest(n,cor);if(!c){ok=false;break;}
+      if(room){let best=null;for(const[a,b]of edgesOf(room.poly)){const pr=proj([c.x,c.y],a,b);if(!best||pr.d<best.d)best=pr;}
+        const dn=newNode(n.floor,best.q[0],best.q[1],'door');addLink(n,dn,'poi',{src:'manual'});addLink(dn,c,'door',{src:'manual'});}
+      else addLink(n,c,'poi',{src:'manual'});break;}
+    case'R-03':deleteLink(is.ids[0]);break;
+    case'R-04':mergeNodes(is.ids[0],is.ids[1]);break;
+    case'R-05':{const n=NI.get(is.ids[0]);const t=suggestVertical(n);if(!t){ok=false;break;}addLink(n,t,n.kind,{src:'manual'});break;}
+    case'R-06':{const comp=new Set(is.ids);let best=null;for(const a of S.nodes){if(!comp.has(a.id)||a.type==='poi')continue;for(const b of S.nodes){if(comp.has(b.id)||b.floor!==a.floor||b.type==='poi')continue;const d=Math.hypot(a.x-b.x,a.y-b.y);if(!best||d<best.d)best={a,b,d};}}if(!best){ok=false;break;}addLink(best.a,best.b,'corridor',{src:'manual'});break;}
+  }
+  if(!ok){undoStack.pop();toast('자동 수정할 대상을 찾지 못했습니다');return;}
+  UI.issue=null;afterChange();toast('수정했습니다 · Ctrl+Z로 되돌릴 수 있습니다');
+}
+
+/* ---------------- 편집 연산 ---------------- */
+function newNode(floor,x,y,type){const n={id:nid(),floor,x,y,type,src:'manual'};S.nodes.push(n);NI.set(n.id,n);return n;}
+function manualLink(a,b){if(!a||!b||a.id===b.id)return null;const type=a.floor!==b.floor?(a.kind==='ev'||b.kind==='ev'?'ev':'stair'):(a.type==='poi'||b.type==='poi')?'poi':(a.type==='door'||b.type==='door')?'door':'corridor';const l=addLink(a,b,type,{src:'manual'});if(!l)toast('이미 연결된 노드입니다');return l;}
+function splitLink(id,w){const l=S.links.find(x=>x.id===id);const a=NI.get(l.a),b=NI.get(l.b);const r=proj(w,[a.x,a.y],[b.x,b.y]);const n=newNode(a.floor,r.q[0],r.q[1],'corridor');S.links=S.links.filter(x=>x!==l);addLink(a,n,l.type,{bidir:l.bidir,wheel:l.wheel,src:'manual'});addLink(n,b,l.type,{bidir:l.bidir,wheel:l.wheel,src:'manual'});return n;}
+function deleteNode(id){S.nodes=S.nodes.filter(n=>n.id!==id);S.links=S.links.filter(l=>l.a!==id&&l.b!==id);NI.delete(id);}
+function deleteLink(id){S.links=S.links.filter(l=>l.id!==id);}
+function mergeNodes(keep,drop){S.links.forEach(l=>{if(l.a===drop)l.a=keep;if(l.b===drop)l.b=keep;});const seen=new Set();S.links=S.links.filter(l=>{if(l.a===l.b)return false;const k=[l.a,l.b].sort().join('|');if(seen.has(k))return false;seen.add(k);return true;});S.nodes=S.nodes.filter(n=>n.id!==drop);NI.delete(drop);}
+const snapshot=()=>JSON.stringify({n:S.nodes,l:S.links,s:S.seq});
+function pushUndo(){undoStack.push(snapshot());if(undoStack.length>100)undoStack.shift();redoStack=[];}
+function restoreSnap(t){const o=JSON.parse(t);S.nodes=o.n;S.links=o.l;S.seq=o.s;}
+function undo(){if(!undoStack.length){toast('되돌릴 작업이 없습니다');return;}redoStack.push(snapshot());restoreSnap(undoStack.pop());UI.sel=null;afterChange();}
+function redo(){if(!redoStack.length){toast('다시 실행할 작업이 없습니다');return;}undoStack.push(snapshot());restoreSnap(redoStack.pop());UI.sel=null;afterChange();}
+function afterChange(){validate();T3.dirty=true;UI.reach=null;save();if(UI.step===4)renderEditor();}
+
+/* ---------------- 저장 ---------------- */
+const LS_KEY='indoor-net-proto-v1';let saveT=null;
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>saveNow(true),300);}
+function saveNow(touch){clearTimeout(saveT);saveT=null;if(!CUR)return;let ok=true,changed=false;try{const t=JSON.stringify(S),k=projKey();changed=localStorage.getItem(k)!==t;localStorage.setItem(k,t);}catch(e){ok=false;}syncProject(touch&&changed);const el=$('#saveState');if(el)el.textContent=ok?'자동 저장됨 · '+new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'브라우저 저장 불가';}
+function loadSaved(){try{const t=localStorage.getItem(projKey());if(t){const o=JSON.parse(t);if(o&&Array.isArray(o.floors)&&o.floors.length){S={...emptyState(),...o,params:{...DEF_PARAMS,...(o.params||{})}};return true;}}}catch(e){}return false;}
+function setState(st){S=st;reindex();validate();undoStack=[];redoStack=[];UI.sel=null;UI.issue=null;UI.route=null;UI.history=[];UI.reach=null;UI.pendingLink=null;
+  UI.floor=sortedFloors()[0]?.id||null;UI.genFloor=UI.floor;Object.keys(VIEWS).forEach(k=>delete VIEWS[k]);T3.dirty=true;T3.resetCam=true;save();}
+
+/* ---------------- 지도 렌더링 (공용) ---------------- */
+function fitView(floor,W,H){let pts=S.spaces.filter(s=>s.floor===floor).flatMap(s=>s.poly);if(!pts.length)pts=S.nodes.filter(n=>n.floor===floor).map(n=>[n.x,n.y]);if(!pts.length)pts=[[0,0],[50,30]];
+  const[x0,y0,x1,y1]=bbox(pts);const bw=Math.max(1,x1-x0),bh=Math.max(1,y1-y0);const k=Math.max(0.01,Math.min((W-80)/bw,(H-120)/bh));
+  return{k,k0:k,ox:x0-(W/k-bw)/2,oy:y1+(H/k-bh)/2+10/k,W,H,floor};}
+const toW=(v,p)=>[p[0]/v.k+v.ox,v.oy-p[1]/v.k];
+const toS=(v,x,y)=>[(x-v.ox)*v.k,(v.oy-y)*v.k];
+function zoomAt(v,p,f){const w=toW(v,p);v.k=Math.max(v.k0*0.2,Math.min(v.k0*20,v.k*f));v.ox=w[0]-p[0]/v.k;v.oy=w[1]+p[1]/v.k;v.user=true;}
+function getView(svg,floor){const W=svg.clientWidth,H=svg.clientHeight;let v=VIEWS[svg.id];if(!v||v.floor!==floor||(!v.user&&(v.W!==W||v.H!==H)))v=VIEWS[svg.id]=fitView(floor,W,H);v.W=W;v.H=H;return v;}
+function renderMap(svg,floor,o={}){
+  const W=svg.clientWidth,H=svg.clientHeight;if(!W||!H||!floor){svg.innerHTML='';return;}
+  const v=getView(svg,floor);svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  const L=o.layers||{space:1,wall:1,link:1,node:1,poi:1,issue:1};
+  const X=x=>((x-v.ox)*v.k).toFixed(1),Y=y=>((v.oy-y)*v.k).toFixed(1);const P=poly=>poly.map(p=>X(p[0])+','+Y(p[1])).join(' ');
+  const out=[];const sp=S.spaces.filter(s=>s.floor===floor);
+  if(L.space){sp.filter(s=>s.type==='corridor').forEach(s=>out.push(`<polygon class="sp-corridor" points="${P(s.poly)}"/>`));sp.filter(s=>s.type!=='corridor').forEach(s=>out.push(`<polygon class="sp-${s.type}" points="${P(s.poly)}"/>`));}
+  if(L.wall)sp.filter(s=>s.type!=='corridor').forEach(s=>out.push(`<polygon class="wl" points="${P(s.poly)}"/>`));
+  const bad=new Set(ISSUES.filter(i=>i.code==='R-03').map(i=>i.ids[0]));const vset=new Set();
+  for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b)continue;
+    if(a.floor!==b.floor){if(a.floor===floor)vset.add(a.id);if(b.floor===floor)vset.add(b.id);continue;}
+    if(a.floor!==floor||!L.link)continue;
+    let c='lk t-'+l.type;if(o.dim)c='lk dim';else{if(!l.wheel&&l.type!=='poi')c+=' nowheel';if(bad.has(l.id))c+=' bad';if(o.sel&&o.sel.kind==='link'&&o.sel.id===l.id)c+=' sel';}
+    out.push(`<line class="${c}" x1="${X(a.x)}" y1="${Y(a.y)}" x2="${X(b.x)}" y2="${Y(b.y)}"/>`);}
+  if(o.route){for(const run of o.route)if(run.length>1)out.push(`<polyline class="route" points="${run.map(n=>X(n.x)+','+Y(n.y)).join(' ')}"/>`);}
+  if(o.pending&&o.cursor){const a=NI.get(o.pending);if(a&&a.floor===floor)out.push(`<line class="pendline" x1="${X(a.x)}" y1="${Y(a.y)}" x2="${X(o.cursor[0])}" y2="${Y(o.cursor[1])}"/>`);}
+  const nodes=S.nodes.filter(n=>n.floor===floor);
+  if(!o.dim)for(const id of vset){const n=NI.get(id);if(n)out.push(`<circle class="vm" cx="${X(n.x)}" cy="${Y(n.y)}" r="11"/>`);}
+  if(L.node&&!o.dim)for(const n of nodes){if(n.type==='poi')continue;const s=o.sel&&o.sel.kind==='node'&&o.sel.id===n.id?' sel':o.pending===n.id?' pend':'';
+    if(n.type==='door')out.push(`<rect class="nd door${s}" x="${(X(n.x)-4.5)}" y="${(Y(n.y)-4.5)}" width="9" height="9"/>`);else out.push(`<circle class="nd${s}" cx="${X(n.x)}" cy="${Y(n.y)}" r="${s?6:4.5}"/>`);}
+  if(L.poi)for(const n of nodes){if(n.type!=='poi')continue;const s=o.dim?' dim':(o.sel&&o.sel.kind==='node'&&o.sel.id===n.id?' sel':o.pending===n.id?' sel':'');
+    out.push(`<circle class="poi${s}" cx="${X(n.x)}" cy="${Y(n.y)}" r="${o.dim?5:6.5}"/>`);if(v.k>3.2)out.push(`<text class="lbl" x="${X(n.x)}" y="${(+Y(n.y)-11).toFixed(1)}" text-anchor="middle">${esc(n.name||n.id)}</text>`);}
+  if(L.issue&&!o.dim&&o.markers!==false)for(const is of ISSUES){if(is.floor!==floor)continue;const on=o.issue===is.key;out.push(`<circle class="iss${on?' on':''}" cx="${X(is.x)}" cy="${Y(is.y)}" r="${on?26:15}"/>`);}
+  if(o.pins)for(const p of o.pins){if(p.n.floor!==floor)continue;out.push(`<circle class="pin" cx="${X(p.n.x)}" cy="${Y(p.n.y)}" r="14" fill="${p.color}"/><text class="pintx" x="${X(p.n.x)}" y="${(+Y(p.n.y)+4).toFixed(1)}" text-anchor="middle">${p.t}</text>`);}
+  svg.innerHTML=out.join('');
+  return v;
+}
+function attachPanZoom(svg,redraw){
+  let d=null;
+  svg.addEventListener('mousedown',e=>{const v=VIEWS[svg.id];if(!v)return;const r=svg.getBoundingClientRect();d={p0:[e.clientX-r.left,e.clientY-r.top],ox:v.ox,oy:v.oy};});
+  window.addEventListener('mousemove',e=>{if(!d)return;const v=VIEWS[svg.id];const r=svg.getBoundingClientRect();const p=[e.clientX-r.left,e.clientY-r.top];v.ox=d.ox-(p[0]-d.p0[0])/v.k;v.oy=d.oy+(p[1]-d.p0[1])/v.k;v.user=true;redraw();});
+  window.addEventListener('mouseup',()=>d=null);
+  svg.addEventListener('wheel',e=>{e.preventDefault();const v=VIEWS[svg.id];if(!v)return;const r=svg.getBoundingClientRect();zoomAt(v,[e.clientX-r.left,e.clientY-r.top],e.deltaY<0?1.15:1/1.15);redraw();},{passive:false});
+}
+
+/* ---------------- 헤더/라우팅 ---------------- */
+const STEPS=['데이터 업로드','지도 확인·3D','네트워크 생성','검수·편집','길찾기 테스트','내보내기'];
+function renderHeader(){
+  const done=[S.floors.length>0,S.floors.length>0&&T3.visited,S.nodes.length>0,S.nodes.length>0&&UI.visitedEdit,UI.history.length>0,false].map((v,i)=>v||!!CUR?.done?.[i]);
+  $('#steps').innerHTML=STEPS.map((s,i)=>`${i?'<span class="sep"></span>':''}<button class="step ${UI.step===i+1?'cur':done[i]?'done':''}" data-go="${i+1}" ${UI.step===i+1?'aria-current="step"':''}><span class="dot">${done[i]&&UI.step!==i+1?'✓':i+1}</span>${s}</button>`).join('');
+  $('#projName').textContent=S.floors.length?`${sortedFloors().map(f=>f.id).join(' ')} · ${S.meta.crs}`:'데이터 업로드 전';$('#projTitle').textContent=CUR?CUR.name:'실내 길찾기 네트워크';renderWsTop();
+}
+function go(step){UI.step=step;if(step===2)T3.visited=true;if(step===4)UI.visitedEdit=true;UI.pendingLink=null;$$('.screen').forEach(s=>s.classList.toggle('on',+s.dataset.screen===step));render();}
+function render(){renderHeader();[null,renderUpload,render3DScreen,renderGen,renderEditor,renderRoute,renderExport][UI.step]();}
+const emptyHtml=(msg,btn)=>`<b>${msg}</b><div>${btn||'① 데이터 업로드에서 샘플 프로젝트를 불러오거나 파일을 올려 주세요.'}</div><button class="btn pri" data-go="1">데이터 업로드로 이동</button>`;
+
+/* ---------------- 1. 업로드 ---------------- */
+const UP={sp:null,spName:'',spFields:[],typeF:'',floorF:'',fixedFloor:'1F',nameF:'',roles:{},poi:null,poiName:'',poiFields:[],poiGeo:false,pm:{}};
+const ROLE_KO={corridor:'복도·통행 공간',room:'실 (목적지 공간)',stair:'계단',ev:'엘리베이터',door:'출입문 (점)',ignore:'제외'};
+const guessRole=v=>{v=String(v);return/corr|hall|복도|통로|walk/i.test(v)?'corridor':/stair|계단/i.test(v)?'stair':/elev|^ev$|엘리베이터|승강/i.test(v)?'ev':/door|출입|문/i.test(v)?'door':/wall|벽|column|기둥/i.test(v)?'ignore':'room';};
+const pickField=(fields,re)=>fields.find(f=>re.test(f))||'';
+function loadScript(src){return new Promise((res,rej)=>{const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s);});}
+async function ensureShp(){if(window.shp)return;try{await loadScript('https://cdn.jsdelivr.net/npm/shpjs@3.6.3/dist/shp.min.js');}catch(e){await loadScript('https://cdn.jsdelivr.net/npm/shpjs@3.6.3/dist/shp.js');}}
+async function readText(file){const buf=await file.arrayBuffer();try{return new TextDecoder('utf-8',{fatal:true}).decode(buf);}catch(e){return new TextDecoder('euc-kr').decode(buf);}}
+function parseCSV(text){const rows=[];let row=[],cur='',q=false;for(let i=0;i<text.length;i++){const c=text[i];if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}else if(c==='"')q=true;else if(c===','){row.push(cur);cur='';}else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);cur='';if(row.length>1||row[0]!=='')rows.push(row);row=[];}else cur+=c;}
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}if(!rows.length)return[];const head=rows.shift().map(h=>h.trim().replace(/^﻿/,''));return rows.map(r=>Object.fromEntries(head.map((h,i)=>[h,(r[i]??'').trim()])));}
+async function onSpatialFile(file){
+  try{let gj;UP.spName=file.name;$('#spInfo').innerHTML='<p class="muted">읽는 중…</p>';
+    if(/\.zip$/i.test(file.name)){await ensureShp();gj=await shp(await file.arrayBuffer());}else gj=JSON.parse(await readText(file));
+    const feats=(Array.isArray(gj)?gj.flatMap(g=>(g.features||[]).map(f=>({...f,properties:{...f.properties,_layer:g.fileName}}))):gj.type==='FeatureCollection'?gj.features:[gj]).filter(f=>f&&f.geometry);
+    if(!feats.length)throw new Error('도형이 없습니다');
+    UP.sp=feats;UP.spFields=[...new Set(feats.flatMap(f=>Object.keys(f.properties||{})))];
+    UP.typeF=pickField(UP.spFields,/type|유형|용도|kind|class|구분/i)||(UP.spFields.includes('_layer')?'_layer':UP.spFields[0]||'');
+    UP.floorF=pickField(UP.spFields,/floor|층|^fl|level|lvl/i);UP.nameF=pickField(UP.spFields,/name|이름|명칭|nm/i);UP.roles={};
+    renderUpload();toast(`도형 ${feats.length}개를 읽었습니다`);
+  }catch(e){$('#spInfo').innerHTML=`<p style="color:var(--errink)">파일을 읽지 못했습니다: ${esc(e.message||e)}</p>`;}
+}
+async function onPoiFile(file){
+  try{UP.poiName=file.name;const text=await readText(file);
+    if(/\.csv$/i.test(file.name)){UP.poi=parseCSV(text);UP.poiGeo=false;}
+    else{const gj=JSON.parse(text);UP.poi=(gj.features||[]).filter(f=>f.geometry&&f.geometry.type==='Point').map(f=>({...f.properties,__x:f.geometry.coordinates[0],__y:f.geometry.coordinates[1]}));UP.poiGeo=true;}
+    if(!UP.poi.length)throw new Error('행이 없습니다');
+    UP.poiFields=Object.keys(UP.poi[0]).filter(k=>!k.startsWith('__'));const F=UP.poiFields;
+    UP.pm={name:pickField(F,/name|이름|명칭/i),cat:pickField(F,/cat|분류|종류|type/i),floor:pickField(F,/floor|층|^fl|level/i),x:UP.poiGeo?'__x':pickField(F,/^x|x_|lon|경도|east/i),y:UP.poiGeo?'__y':pickField(F,/^y|y_|lat|위도|north/i)};
+    renderUpload();toast(`POI ${UP.poi.length}건을 읽었습니다`);
+  }catch(e){$('#poiInfo').innerHTML=`<p style="color:var(--errink)">파일을 읽지 못했습니다: ${esc(e.message||e)}</p>`;}
+}
+const normFloor=v=>{let s=String(v??'').trim().toUpperCase();if(!s)return'';if(/^-?\d+$/.test(s)){const n=+s;return n<0?'B'+(-n):n+'F';}let m=s.match(/^B(\d+)/)||s.match(/지하\s*(\d+)/);if(m)return'B'+m[1];m=s.match(/(\d+)\s*(F|층)?/);return m?m[1]+'F':s;};
+function spTypeValues(){const c=new Map();for(const f of UP.sp){const v=String(f.properties?.[UP.typeF]??'(없음)');c.set(v,(c.get(v)||0)+1);}return[...c.entries()];}
+function renderUpload(){
+  const sel=(id,opts,val,extra='')=>`<select class="inp" data-up="${id}" ${extra}>${opts.map(([v,t])=>`<option value="${esc(v)}" ${v===val?'selected':''}>${esc(t)}</option>`).join('')}</select>`;
+  if(UP.sp){const vals=spTypeValues();vals.forEach(([v])=>{if(!UP.roles[v])UP.roles[v]=guessRole(v);});const F=[['','(사용 안 함)'],...UP.spFields.map(f=>[f,f])];
+    $('#spInfo').innerHTML=`<div class="fld"><span>파일</span><span class="mono">${esc(UP.spName)} · 도형 ${UP.sp.length}개</span></div>
+    <div class="fld"><span>공간 유형 필드</span>${sel('typeF',F.slice(1),UP.typeF)}</div>
+    <div class="fld"><span>층 필드</span>${sel('floorF',F,UP.floorF)}</div>
+    ${UP.floorF?'':`<div class="fld"><span>층 지정 (필드 없음)</span><input class="inp" data-up="fixedFloor" value="${esc(UP.fixedFloor)}" style="width:80px"></div>`}
+    <div class="fld"><span>이름 필드</span>${sel('nameF',F,UP.nameF)}</div>
+    <h3 class="h3" style="margin-top:6px">공간 유형 매핑</h3>
+    <table class="t"><thead><tr><th>값</th><th>개수</th><th>역할</th></tr></thead><tbody>${vals.slice(0,40).map(([v,c])=>`<tr><td class="mono">${esc(v)}</td><td class="mono">${c}</td><td>${sel('role',Object.entries(ROLE_KO),UP.roles[v],`data-v="${esc(v)}"`)}</td></tr>`).join('')}</tbody></table>`;}
+  else $('#spInfo').innerHTML='';
+  if(UP.poi){const F=[['','(없음)'],...UP.poiFields.map(f=>[f,f])];const pm=UP.pm;
+    $('#poiInfo').innerHTML=`<div class="fld"><span>파일</span><span class="mono">${esc(UP.poiName)} · ${UP.poi.length}행</span></div>
+    <div style="display:grid;grid-template-columns:repeat(${UP.poiGeo?3:5},minmax(0,1fr));gap:6px">${[['name','이름'],['cat','분류'],['floor','층']].concat(UP.poiGeo?[]:[['x','X 좌표'],['y','Y 좌표']]).map(([k,t])=>`<label style="display:flex;flex-direction:column;gap:4px;font-size:12px"><span class="muted">${t}</span>${sel('pm',F,pm[k],`data-k="${k}"`)}</label>`).join('')}</div>
+    <table class="t"><thead><tr><th>이름</th><th>분류</th><th>층</th><th>X</th><th>Y</th></tr></thead><tbody>${UP.poi.slice(0,6).map(r=>`<tr><td>${esc(r[pm.name])}</td><td>${esc(r[pm.cat])||'<span class="muted">(없음)</span>'}</td><td>${esc(normFloor(r[pm.floor]))}</td><td class="mono">${esc(r[pm.x])}</td><td class="mono">${esc(r[pm.y])}</td></tr>`).join('')}</tbody></table>`;}
+  else $('#poiInfo').innerHTML='';
+  const chk=[];
+  if(S.floors.length)chk.push(['ok',`현재 프로젝트: ${esc(S.meta.name)} · ${S.floors.length}개 층 · POI ${S.pois.length}개`]);
+  if(UP.sp){const roles=Object.values(UP.roles);const cnt={};spTypeValues().forEach(([v,c])=>cnt[UP.roles[v]]=(cnt[UP.roles[v]]||0)+c);
+    chk.push([cnt.corridor?'ok':'err',cnt.corridor?`통행 공간 ${cnt.corridor}개 · 실 ${cnt.room||0}개 · 계단 ${cnt.stair||0} · 엘리베이터 ${cnt.ev||0} · 출입문 ${cnt.door||0}`:'복도·통행 공간으로 지정된 도형이 없습니다. 네트워크를 만들 수 없습니다.']);
+    if(!cnt.door)chk.push(['warn','출입문 데이터가 없습니다. POI 연결이 실패할 수 있습니다.']);
+    const fl=new Set(UP.sp.map(f=>UP.floorF?normFloor(f.properties?.[UP.floorF]):normFloor(UP.fixedFloor)));chk.push(['ok',`층: ${[...fl].sort((a,b)=>floorNum(a)-floorNum(b)).join(', ')}`]);}
+  if(UP.poi){const pm=UP.pm;const bad=UP.poi.filter(r=>isNaN(parseFloat(r[pm.x]))||isNaN(parseFloat(r[pm.y]))).length;const noCat=pm.cat?UP.poi.filter(r=>!r[pm.cat]).length:UP.poi.length;
+    chk.push([bad?'err':'ok',bad?`좌표를 읽을 수 없는 POI ${bad}건 (제외됨)`:`좌표 누락 없음 (${UP.poi.length}/${UP.poi.length})`]);if(noCat)chk.push(['warn',`분류 값이 없는 POI ${noCat}건 → 이름으로 자동 분류`]);}
+  const icon={ok:'<span style="color:var(--ok);font-weight:700">✓</span>',warn:'<span style="color:var(--warnink);font-weight:700">!</span>',err:'<span style="color:var(--errink);font-weight:700">✕</span>'};
+  $('#upCheck').innerHTML=`<div style="display:flex;align-items:center;gap:12px"><h2 style="flex:1">검증 결과</h2>${S.floors.length?'<button class="btn" data-go="2">현재 프로젝트 3D로 보기</button>':''}<button class="btn pri lg" data-act="applyUpload" ${UP.sp&&UP.poi?'':'disabled'}>업로드 데이터 적용하고 다음</button></div>
+  ${chk.length?chk.map(([k,t])=>`<div style="display:flex;gap:10px;align-items:center">${icon[k]}<span>${t}</span></div>`).join(''):'<p class="muted" style="margin:0">공간정보와 POI 파일을 모두 올리면 적용할 수 있습니다. 샘플 파일을 내려받아 업로드 과정을 시험해 볼 수도 있습니다.</p>'}`;
+}
+function applyUpload(){
+  const feats=UP.sp;const raw=[];
+  for(const f of feats){const g=f.geometry;if(g.type==='Polygon')raw.push(...g.coordinates[0]);else if(g.type==='MultiPolygon')raw.push(...g.coordinates[0][0]);else if(g.type==='Point')raw.push(g.coordinates);}
+  const[x0,y0,x1,y1]=bbox(raw);const lonlat=x0>=-180&&x1<=180&&y0>=-90&&y1<=90&&(x1-x0)<1&&(y1-y0)<1;
+  const lat0=(y0+y1)/2;const T=lonlat?(p=>[(p[0]-x0)*111320*Math.cos(lat0*Math.PI/180),(p[1]-y0)*110540]):(p=>[p[0]-x0,p[1]-y0]);
+  const st=emptyState();st.meta={name:UP.spName.replace(/\.[^.]+$/,''),offset:lonlat?[0,0]:[x0,y0],crs:lonlat?'WGS84 → 로컬 평면(m) 변환':'투영 좌표(m) 그대로 사용'};
+  let sid=1,did=1,pid=1;const fset=new Set();
+  for(const f of feats){const pr=f.properties||{};const role=UP.roles[String(pr[UP.typeF]??'(없음)')]||'room';if(role==='ignore')continue;
+    const fl=UP.floorF?normFloor(pr[UP.floorF]):normFloor(UP.fixedFloor);if(!fl)continue;fset.add(fl);const g=f.geometry;
+    if(role==='door'){let p=null;if(g.type==='Point')p=g.coordinates;else if(g.type==='LineString')p=g.coordinates[Math.floor(g.coordinates.length/2)];else if(g.type==='Polygon'){const b=bbox(g.coordinates[0]);p=[(b[0]+b[2])/2,(b[1]+b[3])/2];}
+      if(p){const q=T(p);st.doors.push({id:'D'+did++,floor:fl,x:q[0],y:q[1]});}continue;}
+    const ring=g.type==='Polygon'?g.coordinates[0]:g.type==='MultiPolygon'?g.coordinates[0][0]:null;if(!ring)continue;
+    let poly=ring.map(T);if(poly.length>2&&d2(poly[0],poly[poly.length-1])<1e-9)poly.pop();
+    st.spaces.push({id:'S'+sid++,floor:fl,type:role,name:UP.nameF?String(pr[UP.nameF]??''):'',poly});}
+  const pm=UP.pm;
+  for(const r of UP.poi){const x=parseFloat(r[pm.x]),y=parseFloat(r[pm.y]);if(isNaN(x)||isNaN(y))continue;const fl=normFloor(r[pm.floor])||[...fset][0]||'1F';fset.add(fl);const q=T([x,y]);
+    st.pois.push(mkPoi('P'+pid++,fl,String(r[pm.name]||'POI '+pid),q[0],q[1],r[pm.cat]||''));}
+  const fl=[...fset].sort((a,b)=>floorNum(a)-floorNum(b));const base=Math.max(0,fl.findIndex(f=>floorNum(f)>=1));st.floors=fl.map((id,i)=>({id,elev:(i-base)*3.6,height:3.6}));
+  setState(st);toast(`${fl.length}개 층 · 공간 ${st.spaces.length}개 · POI ${st.pois.length}개를 불러왔습니다`);go(2);
+}
+
+/* ---------------- 2. 3D ---------------- */
+const T3={ready:false,dirty:true,resetCam:true,visited:false,focus:'all',wallH:2,gap:2.5,show:{net:true,vert:true,poi:true,route:true},floorGroups:{}};
+function init3D(){
+  if(T3.ready)return true;if(!window.THREE||!THREE.OrbitControls)return false;
+  const host=$('#v3dHost');T3.renderer=new THREE.WebGLRenderer({antialias:true});T3.renderer.setPixelRatio(Math.min(2,window.devicePixelRatio||1));host.appendChild(T3.renderer.domElement);
+  T3.scene=new THREE.Scene();T3.scene.background=new THREE.Color(0xEEEDE8);
+  T3.camera=new THREE.PerspectiveCamera(40,1,0.1,10000);T3.controls=new THREE.OrbitControls(T3.camera,T3.renderer.domElement);T3.controls.enableDamping=true;
+  T3.scene.add(new THREE.AmbientLight(0xffffff,0.72));const dl=new THREE.DirectionalLight(0xffffff,0.55);dl.position.set(80,160,60);T3.scene.add(dl);
+  T3.root=new THREE.Group();T3.scene.add(T3.root);T3.ready=true;
+  const loop=()=>{requestAnimationFrame(loop);if(UI.step!==2)return;const w=host.clientWidth,h=host.clientHeight;const c=T3.renderer.domElement;
+    if(c.width!==Math.floor(w*T3.renderer.getPixelRatio())||c.height!==Math.floor(h*T3.renderer.getPixelRatio())){T3.renderer.setSize(w,h,false);T3.camera.aspect=w/Math.max(1,h);T3.camera.updateProjectionMatrix();}
+    T3.controls.update();T3.renderer.render(T3.scene,T3.camera);};loop();return true;
+}
+function wallSegs(f){const out=[];const seen=new Set();const doors=S.nodes.filter(n=>n.floor===f&&n.type==='door').map(n=>[n.x,n.y]).concat(S.doors.filter(d=>d.floor===f).map(d=>[d.x,d.y]));
+  for(const s of S.spaces.filter(s=>s.floor===f&&s.type!=='corridor'))for(const[a,b]of edgesOf(s.poly)){const k=[a,b].map(p=>p.map(v=>v.toFixed(2)).join(',')).sort().join('|');if(seen.has(k))continue;seen.add(k);
+    const L=d2(a,b);if(L<0.05)continue;const ts=doors.map(d=>proj(d,a,b)).filter(r=>r.d<0.3).map(r=>r.t*L).sort((x,y)=>x-y);let cur=0;const gw=0.9;
+    const pt=t=>[a[0]+(b[0]-a[0])*t/L,a[1]+(b[1]-a[1])*t/L];for(const t of ts){if(t-gw>cur+0.05)out.push([pt(cur),pt(t-gw)]);cur=Math.max(cur,t+gw);}if(cur<L-0.05)out.push([pt(cur),pt(L)]);}
+  return out;}
+function build3D(){
+  if(!T3.ready)return;const root=T3.root;
+  while(root.children.length){const c=root.children.pop();c.traverse(o=>{if(o.geometry)o.geometry.dispose();if(o.material)[].concat(o.material).forEach(m=>m.dispose());});}
+  T3.floorGroups={};const fl=sortedFloors();if(!fl.length)return;
+  let pts=S.spaces.flatMap(s=>s.poly);if(!pts.length)pts=S.nodes.map(n=>[n.x,n.y]);if(!pts.length)pts=[[0,0],[10,10]];
+  const[x0,y0,x1,y1]=bbox(pts);const cx=(x0+x1)/2,cy=(y0+y1)/2,dim=Math.max(x1-x0,y1-y0,10);
+  const step=Math.max(...fl.map(f=>f.height||3.6))*T3.gap;const E={};fl.forEach((f,i)=>E[f.id]=i*step);
+  const M=(color,op=1)=>{const m=new THREE.MeshLambertMaterial({color,transparent:true,opacity:op});m.userData.op=op;return m;};
+  const vIssue=new Set(ISSUES.filter(i=>i.code==='R-05'||i.code==='R-02').flatMap(i=>i.ids));
+  for(const f of fl){const g=new THREE.Group();g.userData.floor=f.id;root.add(g);T3.floorGroups[f.id]=g;const e=E[f.id];
+    const slab=new THREE.Mesh(new THREE.BoxGeometry(x1-x0+2,0.3,y1-y0+2),M(0xD6D3CA));slab.position.set(cx,e-0.16,-cy);g.add(slab);
+    const col={corridor:0xECEAE3,room:0xFFFFFF,stair:0xE9E4F5,ev:0xE2EAF8};const mats={};
+    for(const s of S.spaces.filter(s=>s.floor===f.id)){const shape=new THREE.Shape(s.poly.map(p=>new THREE.Vector2(p[0],p[1])));const m=new THREE.Mesh(new THREE.ShapeGeometry(shape),mats[s.type]||(mats[s.type]=M(col[s.type]||0xffffff)));m.rotation.x=-Math.PI/2;m.position.y=e+(s.type==='corridor'?0.02:0.01);g.add(m);}
+    const wm=M(0xCFCBC1,0.92);
+    for(const[a,b]of wallSegs(f.id)){const L=d2(a,b);const w=new THREE.Mesh(new THREE.BoxGeometry(L,T3.wallH,0.18),wm);w.position.set((a[0]+b[0])/2,e+T3.wallH/2,-(a[1]+b[1])/2);w.rotation.y=Math.atan2(b[1]-a[1],b[0]-a[0]);g.add(w);}
+    if(T3.show.net){const pos=[];for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b||a.floor!==f.id||b.floor!==f.id)continue;pos.push(a.x,e+0.15,-a.y,b.x,e+0.15,-b.y);}
+      const lg=new THREE.BufferGeometry();lg.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));const lm=new THREE.LineBasicMaterial({color:0x2F5BD3,transparent:true});lm.userData.op=1;g.add(new THREE.LineSegments(lg,lm));}
+    if(T3.show.poi){const pm=M(0x1C1D1F),bm=M(0xB4410C);const sg=new THREE.SphereGeometry(0.45,12,8),bg=new THREE.SphereGeometry(0.9,16,10);
+      for(const n of S.nodes.filter(n=>n.floor===f.id&&n.type==='poi')){const bad=vIssue.has(n.id);const s=new THREE.Mesh(bad?bg:sg,bad?bm:pm);s.position.set(n.x,e+0.6,-n.y);g.add(s);}}
+  }
+  if(T3.show.vert){const vm=M(0x6B4FBB);for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b||a.floor===b.floor)continue;root.add(cyl(new THREE.Vector3(a.x,E[a.floor]+0.2,-a.y),new THREE.Vector3(b.x,E[b.floor]+0.2,-b.y),0.22,vm));}}
+  if(T3.show.route&&UI.route&&UI.route.ok){const p=UI.route.path.map(id=>NI.get(id)).filter(Boolean).map(n=>new THREE.Vector3(n.x,E[n.floor]+0.7,-n.y));if(p.length>1){const path=new THREE.CurvePath();for(let i=0;i<p.length-1;i++)if(p[i].distanceTo(p[i+1])>1e-3)path.add(new THREE.LineCurve3(p[i],p[i+1]));
+    if(path.curves.length)root.add(new THREE.Mesh(new THREE.TubeGeometry(path,Math.max(16,path.curves.length*8),0.35,8,false),M(0xF2B705)));}}
+  root.position.set(-cx,0,cy);T3.dims={dim,H:fl.length*step};
+  if(T3.resetCam){cam('iso');T3.resetCam=false;}applyFocus();T3.dirty=false;
+}
+function cyl(p,q,r,mat){const dir=new THREE.Vector3().subVectors(q,p);const L=dir.length()||0.01;const m=new THREE.Mesh(new THREE.CylinderGeometry(r,r,L,8),mat);m.position.copy(p).addScaledVector(dir,0.5);m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),dir.clone().normalize());return m;}
+function applyFocus(){Object.values(T3.floorGroups).forEach(g=>{const on=T3.focus==='all'||T3.focus===g.userData.floor;g.traverse(o=>{if(o.material){[].concat(o.material).forEach(m=>{const b=m.userData.op??1;m.opacity=on?b:b*0.12;m.depthWrite=on;});}});});}
+function cam(k){if(!T3.ready||!T3.dims)return;const{dim,H}=T3.dims;const t=new THREE.Vector3(0,H/2,0);
+  if(k==='top')T3.camera.position.set(0.01,H+dim*1.3,0.01);else if(k==='front')T3.camera.position.set(0,H/2+dim*0.1,dim*1.5);else T3.camera.position.set(dim*0.95,H+dim*0.85,dim*1.25);
+  T3.controls.target.copy(t);T3.camera.far=dim*40;T3.camera.updateProjectionMatrix();}
+function render3DScreen(){
+  const has=S.floors.length>0;$('#v3Empty').hidden=has;if(!has)$('#v3Empty').innerHTML=emptyHtml('불러온 데이터가 없습니다');
+  const ok=init3D();if(!ok){$('#v3Empty').hidden=false;$('#v3Empty').innerHTML='<b>3D 라이브러리(Three.js)를 불러오지 못했습니다</b><div>인터넷 연결을 확인한 뒤 새로고침해 주세요. 2D 기능은 그대로 쓸 수 있습니다.</div>';}
+  $('#v3Floors').innerHTML=['all',...sortedFloors().map(f=>f.id)].map(f=>`<button class="chip ${T3.focus===f?'on':''}" data-act="v3focus" data-v="${f}">${f==='all'?'전체':f}</button>`).join('');
+  if(ok&&has&&T3.dirty)build3D();else if(ok)applyFocus();
+  const vnodes=S.nodes.filter(n=>n.type==='poi'&&n.kind!=='normal');const groups=new Map();
+  for(const n of vnodes){const k=n.kind+':'+Math.round(n.x)+','+Math.round(n.y);if(!groups.has(k))groups.set(k,[]);groups.get(k).push(n);}
+  const vlinks=S.links.filter(l=>{const a=NI.get(l.a),b=NI.get(l.b);return a&&b&&a.floor!==b.floor;});
+  const vdeg=id=>vlinks.filter(l=>l.a===id||l.b===id).length;
+  $('#v3Side').innerHTML=!has?'<p class="muted">데이터를 불러오면 층 구성과 층간 연결 상태가 표시됩니다.</p>':`
+  <section><h3 class="h3">층 구성</h3>${sortedFloors().reverse().map(f=>`<div class="fld"><span>${f.id} · 표고 ${fmt(f.elev)} m</span><span class="mono" style="font-size:12px">공간 ${S.spaces.filter(s=>s.floor===f.id).length} · POI ${S.pois.filter(p=>p.floor===f.id).length} · 노드 ${S.nodes.filter(n=>n.floor===f.id).length}</span></div>`).join('')}</section>
+  <section style="display:flex;flex-direction:column;gap:8px"><h3 class="h3" style="margin:0">층간 연결 요소</h3>
+  ${!S.nodes.length?'<p class="muted" style="margin:0">③ 네트워크 생성 후 표시됩니다.</p>':[...groups.values()].map(ns=>{const bad=ns.filter(n=>!vdeg(n.id));const name=[...new Set(ns.map(n=>n.name))].join(' / ');
+    return`<div style="display:flex;flex-direction:column;gap:6px;padding:12px;border:1px solid ${bad.length?'var(--err)':'var(--line)'};background:${bad.length?'var(--errsoft)':'#fff'};border-radius:8px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b>${esc(name)}</b><span class="badge ${bad.length?'b-err':'b-ok'}">${bad.length?'연결 누락':'연결됨'}</span></div>
+    <span class="mono muted" style="font-size:12px">${ns.map(n=>n.floor+'('+vdeg(n.id)+')').join(' · ')}</span>
+    ${bad.map(n=>`<button class="btn sm" style="align-self:flex-start" data-act="openNode" data-id="${n.id}">${n.floor} ${esc(n.name)} 편집기에서 열기</button>`).join('')}</div>`;}).join('')}</section>
+  <section style="display:flex;flex-direction:column;gap:8px"><h3 class="h3" style="margin:0">내보내기</h3><button class="btn" data-act="gltf">3D 모델 내보내기 (.glb)</button>
+  ${S.nodes.length?'':'<button class="btn pri" data-go="3">다음: 네트워크 생성</button>'}</section>`;
+}
+
+/* ---------------- 3. 생성 ---------------- */
+function renderGen(){
+  const P=S.params;const has=S.floors.length>0;
+  const radio=(v,t,d)=>`<label class="opt ${P.method===v?'on':''}"><input type="radio" name="gm" value="${v}" data-p="method" ${P.method===v?'checked':''}><span><b>${t}</b><div class="muted" style="font-size:12px;margin-top:2px">${d}</div></span></label>`;
+  const rng=(k,t,min,max,st,u='m')=>`<label style="display:flex;flex-direction:column;gap:6px"><span style="display:flex;justify-content:space-between"><span>${t}</span><span class="mono">${fmt(P[k])} ${u}</span></span><input class="rng" type="range" data-p="${k}" min="${min}" max="${max}" step="${st}" value="${P[k]}"></label>`;
+  const cb=(k,t)=>`<label class="chk"><input type="checkbox" data-p="${k}" ${P[k]?'checked':''}>${t}</label>`;
+  $('#genForm').innerHTML=`<fieldset style="border:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px"><legend class="h3">생성 방식</legend>
+    ${radio('center','복도 중심선 추출 · 권장','복도 폴리곤의 중심선(골격선)을 링크로 사용')}${radio('grid','격자 기반','통행 공간 안의 격자점을 연결 (불규칙한 형태에 강함)')}</fieldset>
+    ${P.method==='center'?rng('spacing','노드 최대 간격 (0=제한 없음)',0,30,1):rng('grid','격자 간격',1,8,0.5)}
+    ${rng('snap','스냅·병합 허용 거리',0.1,2,0.1)}${rng('doorDist','출입문 연결 최대 거리',2,20,1)}
+    <div>${cb('poiAuto','POI를 소속 공간의 출입문에 자동 연결')}${cb('vertical','계단·엘리베이터 층간 연결 생성 (이름 일치)')}</div>`;
+  const g=S.gen;const R=$('#genResult');
+  if(!has){R.innerHTML=`<div class="card" style="align-items:flex-start"><b>불러온 데이터가 없습니다</b><button class="btn pri" data-go="1">데이터 업로드로 이동</button></div>`;return;}
+  if(!g||!S.nodes.length){R.innerHTML=`<div class="card"><h2>생성 준비 완료</h2><p class="muted" style="margin:0">${S.floors.length}개 층 · 통행 공간 ${S.spaces.filter(s=>s.type==='corridor').length}개 · 출입문 ${S.doors.length}개 · POI ${S.pois.length}개. 왼쪽에서 옵션을 확인하고 <b>네트워크 생성 실행</b>을 누르세요.</p></div><div class="card" style="flex:1;min-height:360px;padding:12px"><svg class="mapsvg" id="genSvg"></svg></div>`;
+    requestAnimationFrame(()=>renderMap($('#genSvg'),UI.genFloor||sortedFloors()[0].id,{markers:false}));return;}
+  const byF=f=>ISSUES.filter(i=>i.floor===f).length;const err=ISSUES.filter(i=>i.sev==='err').length;
+  const poiLinked=S.nodes.filter(n=>n.type==='poi'&&S.links.some(l=>l.a===n.id||l.b===n.id)).length,poiAll=S.nodes.filter(n=>n.type==='poi').length;
+  R.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><span class="badge b-ok">생성 완료</span><b style="font-size:14px">${g.method==='center'?'복도 중심선 추출':'격자 기반'} · ${fmt(g.ms,0)} ms</b><span class="muted">${new Date(g.at).toLocaleString('ko-KR')}</span></div>
+  <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+    <div class="tile"><span class="h3" style="margin:0">노드</span><span class="v">${S.nodes.length}</span><span class="muted" style="font-size:12px">복도 ${S.nodes.filter(n=>n.type==='corridor').length} · 출입문 ${S.nodes.filter(n=>n.type==='door').length} · POI ${poiAll}</span></div>
+    <div class="tile"><span class="h3" style="margin:0">링크</span><span class="v">${S.links.length}</span><span class="muted" style="font-size:12px">층간 ${S.links.filter(l=>l.type==='stair'||l.type==='ev').length} · 총 ${fmt(S.links.reduce((s,l)=>s+linkLen(l),0),0)} m</span></div>
+    <div class="tile"><span class="h3" style="margin:0">POI 연결</span><span class="v">${poiLinked}<span style="font-size:17px;color:var(--mute)">/${poiAll}</span></span><span class="muted" style="font-size:12px">연결률 ${fmt(poiAll?poiLinked/poiAll*100:0)}%</span></div>
+    <div class="tile" style="${ISSUES.length?'border-color:var(--err)':''}"><span class="h3" style="margin:0">검수 이슈</span><span class="v" style="color:${ISSUES.length?'var(--errink)':'var(--ok)'}">${ISSUES.length}</span><span class="muted" style="font-size:12px">오류 ${err} · 경고 ${ISSUES.length-err}</span></div>
+  </div>
+  <div style="flex:1;min-height:380px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr);gap:16px">
+    <section class="card" style="gap:0"><h3 class="h3">처리 단계</h3>${g.log.map((l,i)=>`<div class="log"><span style="color:${i===g.log.length-1&&ISSUES.length?'var(--errink)':'var(--ok)'};font-weight:700">${i===g.log.length-1&&ISSUES.length?'!':'✓'}</span><span>${esc(l.label)}</span><span class="mono muted" style="font-size:12px;text-align:right">${fmt(l.ms,1)} ms</span></div>`).join('')}
+      <div style="margin-top:auto;padding-top:14px;display:flex;gap:8px"><button class="btn pri" style="flex:1" data-go="4">검수·편집으로 이동</button><button class="btn" data-go="2">3D로 보기</button></div></section>
+    <section class="card" style="padding:14px"><div style="display:flex;align-items:center;gap:8px"><h3 class="h3" style="margin:0;flex:1">생성 결과 미리보기</h3><div class="chips">${sortedFloors().map(f=>`<button class="chip ${UI.genFloor===f.id?'on':''}" data-act="genFloor" data-v="${f.id}">${f.id}${byF(f.id)?` <span style="color:${UI.genFloor===f.id?'#FFC9AE':'var(--err)'}">●${byF(f.id)}</span>`:''}</button>`).join('')}</div></div>
+      <svg class="mapsvg" id="genSvg" style="flex:1"></svg></section>
+  </div>`;
+  requestAnimationFrame(()=>renderMap($('#genSvg'),UI.genFloor,{}));
+}
+
+/* ---------------- 4. 편집 ---------------- */
+const TOOLS={select:['선택·이동','V','객체 클릭으로 선택 · 노드 드래그로 이동 · 빈 곳 드래그로 화면 이동'],node:['노드 추가','N','빈 곳 클릭: 노드 추가 · 링크 위 클릭: 링크 분할'],link:['링크 연결','L','노드를 차례로 클릭해 연결 · 빈 곳 클릭 시 노드 생성 후 연결 · Esc로 종료'],del:['삭제','D','클릭한 노드·링크 삭제 (연결 링크도 함께 삭제)']};
+function drawEditorMap(){const svg=$('#edSvg');if(!UI.floor)return;const is=UI.issue&&ISSUES.find(i=>i.key===UI.issue);
+  const v=renderMap(svg,UI.floor,{layers:UI.layers,sel:UI.sel,issue:is?is.key:null,pending:UI.pendingLink,cursor:UI.cursor});if(v){$('#edZoom').textContent=Math.round(v.k/v.k0*100)+'%';const px=10*v.k;$('#edScale').innerHTML=px>40&&px<300?`<div style="width:${px}px"></div><span class="mono">0 — 10 m</span>`:`<div style="width:${50*v.k}px"></div><span class="mono">0 — 50 m</span>`;}}
+function renderEditor(){
+  const has=S.nodes.length>0;$('#edEmpty').hidden=has;if(!has){$('#edEmpty').innerHTML=S.floors.length?`<b>아직 네트워크가 없습니다</b><div>③ 네트워크 생성에서 먼저 자동 생성을 실행하세요.</div><button class="btn pri" data-go="3">네트워크 생성으로 이동</button>`:emptyHtml('불러온 데이터가 없습니다');}
+  if(!UI.floor&&S.floors.length)UI.floor=sortedFloors()[0].id;const f=UI.floor;
+  const fIss=id=>ISSUES.filter(i=>i.floor===id).length;
+  $('#edFloors').innerHTML=sortedFloors().map(x=>`<button class="chip ${x.id===f?'on':''}" data-act="floor" data-v="${x.id}">${x.id}${fIss(x.id)?` <span style="color:${x.id===f?'#FFC9AE':'var(--err)'}">●${fIss(x.id)}</span>`:''}</button>`).join('');
+  const nodesF=S.nodes.filter(n=>n.floor===f),linksF=S.links.filter(l=>NI.get(l.a)?.floor===f&&NI.get(l.b)?.floor===f);
+  const LY=[['space','공간 폴리곤',S.spaces.filter(s=>s.floor===f).length],['wall','벽·실 경계',S.spaces.filter(s=>s.floor===f&&s.type!=='corridor').length],['link','링크',linksF.length],['node','노드',nodesF.filter(n=>n.type!=='poi').length],['poi','POI',nodesF.filter(n=>n.type==='poi').length],['issue','검수 이슈 표시',fIss(f)]];
+  $('#edLayers').innerHTML=LY.map(([k,t,c])=>`<label class="chk"><input type="checkbox" data-layer="${k}" ${UI.layers[k]?'checked':''}>${t}<span class="cnt" ${k==='issue'&&c?'style="color:var(--err)"':''}>${c}</span></label>`).join('');
+  const ico={select:'<path d="M4 3l10 5.5-4.5 1.2L7.5 14z"/>',node:'<circle cx="9" cy="9" r="5.5"/><path d="M9 6.5v5M6.5 9h5"/>',link:'<circle cx="4" cy="14" r="2"/><circle cx="14" cy="4" r="2"/><path d="M5.5 12.5l7-7"/>',del:'<path d="M3 5h12M7 5V3h4v2M5 5l1 10h6l1-10"/>'};
+  $('#edTools').innerHTML=Object.entries(TOOLS).map(([k,[t,kb]])=>`<button class="tool ${UI.tool===k?'on':''}" data-act="tool" data-v="${k}" aria-pressed="${UI.tool===k}"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round">${ico[k]}</svg>${t}<kbd>${kb}</kbd></button>`).join('');
+  const all=S.nodes.length+S.links.length,man=S.nodes.filter(n=>n.src==='manual').length+S.links.filter(l=>l.src==='manual').length,ed=S.nodes.filter(n=>n.edited).length+S.links.filter(l=>l.edited).length;
+  $('#edInfo').innerHTML=`<b>자동화 지표</b><br>자동 생성 <span class="mono">${all-man}</span> · 직접 추가 <span class="mono">${man}</span> · 자동→수정 <span class="mono">${ed}</span><br><span class="muted">수작업 개입 비율 ${all?fmt((man+ed)/all*100):'0.0'}%</span>`;
+  const tl=TOOLS[UI.tool];$('#edHint').innerHTML=`<b>${tl[0]}</b><span>${UI.pendingLink?'다음 노드를 클릭 · Esc로 종료':tl[2]}</span>`;
+  const poiF=nodesF.filter(n=>n.type==='poi');const deg=id=>S.links.filter(l=>l.a===id||l.b===id).length;
+  $('#edStat').innerHTML=`<span>${f||'-'} · 노드 <b>${nodesF.length}</b></span><span>링크 <b>${linksF.length}</b></span><span>POI 연결 <b>${poiF.filter(n=>deg(n.id)).length}/${poiF.length}</b></span><span>전체 이슈 <b style="color:var(--err)">${ISSUES.length}</b></span><span style="margin-left:auto" class="mono muted" id="edCursor"></span>`;
+  renderProps();renderIssues();drawEditorMap();
+}
+function renderProps(){
+  const P=$('#edProps');const is=UI.issue&&ISSUES.find(i=>i.key===UI.issue);
+  if(is){P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 class="h3" style="margin:0">검수 이슈 상세</h3><button class="zb" style="width:32px;height:32px" data-act="clearSel" aria-label="닫기">✕</button></div>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="badge ${is.sev==='err'?'b-err':'b-warn'}">${is.sev==='err'?'오류':'경고'}</span><b style="font-size:17px">${is.rule}</b><span class="mono muted" style="font-size:11px">${is.code} · ${is.floor}</span></div>
+    <p style="margin:0;line-height:1.6;color:var(--ink2)">${esc(is.desc)}</p>
+    <div class="kv"><span>대상</span><span class="mono">${esc(is.target)}</span><span>위치</span><span class="mono">X ${fmt(is.x)} · Y ${fmt(is.y)} m</span></div>
+    <div class="fixbox"><b>제안 수정</b><br>${esc(is.fix)}</div>
+    <div style="display:flex;gap:6px"><button class="btn pri" style="flex:1" data-act="fix">제안대로 수정</button><button class="btn" data-act="gotoIssue">위치로 이동</button><button class="btn" data-act="ignore">예외 처리</button></div>`;return;}
+  const s=UI.sel;
+  if(s&&s.kind==='node'&&NI.get(s.id)){const n=NI.get(s.id);const ls=S.links.filter(l=>l.a===n.id||l.b===n.id);const vls=ls.filter(l=>NI.get(l.a)?.floor!==NI.get(l.b)?.floor);
+    P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 class="h3" style="margin:0">선택한 객체</h3><span class="badge ${n.src==='manual'?'b-gray':'b-blue'}">${n.src==='manual'?'직접 추가':n.edited?'자동 생성 · 수정됨':'자동 생성'}</span></div>
+    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:18px">${n.type==='poi'?esc(n.name):NTYPE_KO[n.type]}</b><span class="mono muted">${n.id}</span></div>
+    <div>${n.type==='poi'?`<div class="fld"><span>POI 분류</span><span>${esc(S.pois.find(p=>p.id===n.poiId)?.cat||'-')}${n.kind!=='normal'?' · '+(n.kind==='ev'?'엘리베이터':'계단'):''}</span></div>`:
+      `<div class="fld"><label for="pType">유형</label><select class="inp" id="pType" data-pf="ntype"><option value="corridor" ${n.type==='corridor'?'selected':''}>복도 노드</option><option value="door" ${n.type==='door'?'selected':''}>출입문 노드</option></select></div>`}
+      <div class="fld"><span>층</span><span class="mono">${n.floor}</span></div>
+      <div class="fld"><label>X (m)</label><input class="inp num" type="number" step="0.1" data-pf="nx" value="${fmt(n.x,2)}"></div>
+      <div class="fld"><label>Y (m)</label><input class="inp num" type="number" step="0.1" data-pf="ny" value="${fmt(n.y,2)}"></div>
+      <div class="fld"><span>연결 링크</span><span>${ls.length?ls.filter(l=>!vls.includes(l)).map(l=>`<button class="link" data-act="selLink" data-id="${l.id}">${l.id}</button>`).join(' '):'<span style="color:var(--err)">없음</span>'}</span></div></div>
+    ${vls.length?`<div><h3 class="h3" style="margin:6px 0">층간 연결</h3>${vls.map(l=>{const o=NI.get(l.a===n.id?l.b:l.a);return`<div class="fld"><span>${TYPE_KO[l.type]} → ${o.floor} ${esc(o.name||o.id)}</span><button class="btn sm danger" data-act="delLink" data-id="${l.id}">삭제</button></div>`;}).join('')}</div>`:''}
+    <div style="display:flex;gap:6px"><button class="btn" style="flex:1" data-act="startLink">여기서 링크 연결</button><button class="btn danger" data-act="delSel">삭제</button></div>`;return;}
+  if(s&&s.kind==='link'){const l=S.links.find(x=>x.id===s.id);if(l){const a=NI.get(l.a),b=NI.get(l.b);
+    P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 class="h3" style="margin:0">선택한 객체</h3><span class="badge ${l.src==='manual'?'b-gray':'b-blue'}">${l.src==='manual'?'직접 추가':l.edited?'자동 생성 · 수정됨':'자동 생성'}</span></div>
+    <div style="display:flex;align-items:baseline;gap:8px"><b style="font-size:18px">링크</b><span class="mono muted">${l.id}</span></div>
+    <div><div class="fld"><span>시작 노드</span><button class="link" data-act="selNode" data-id="${a.id}">${a.id}${a.name?' · '+esc(a.name):''}</button></div>
+    <div class="fld"><span>끝 노드</span><button class="link" data-act="selNode" data-id="${b.id}">${b.id}${b.name?' · '+esc(b.name):''}</button></div>
+    <div class="fld"><span>길이</span><span class="mono">${fmt(linkLen(l),2)} m</span></div>
+    <div class="fld"><label for="lType">유형</label><select class="inp" id="lType" data-pf="ltype">${Object.entries(TYPE_KO).filter(([k])=>k!=='room').map(([k,t])=>`<option value="${k}" ${l.type===k?'selected':''}>${t}</option>`).join('')}</select></div>
+    <label class="fld" style="cursor:pointer"><span>양방향 통행</span><input type="checkbox" data-pf="lbidir" ${l.bidir?'checked':''} style="width:16px;height:16px;accent-color:var(--blue)"></label>
+    <label class="fld" style="cursor:pointer"><span>휠체어 통행 가능</span><input type="checkbox" data-pf="lwheel" ${l.wheel?'checked':''} style="width:16px;height:16px;accent-color:var(--blue)"></label></div>
+    <div style="display:flex;gap:6px"><button class="btn" style="flex:1" data-act="splitSel">가운데서 분할</button><button class="btn danger" data-act="delSel">삭제</button></div>`;return;}}
+  P.innerHTML=`<h3 class="h3" style="margin:0">선택한 객체 없음</h3><p class="muted" style="margin:0;line-height:1.6">지도에서 노드·링크를 클릭하거나 아래 이슈를 선택하세요.</p>
+  <div class="kv" style="font-size:12px"><span class="mono">V N L D</span><span>도구 전환</span><span class="mono">Delete</span><span>선택 삭제</span><span class="mono">Ctrl+Z / Ctrl+Y</span><span>되돌리기 / 다시 실행</span><span class="mono">휠 · 드래그</span><span>확대 · 화면 이동</span><span class="mono">Esc</span><span>선택·연결 취소</span></div>`;
+}
+function renderIssues(){
+  const e=ISSUES.filter(i=>i.sev==='err').length,w=ISSUES.length-e;
+  $('#issFilter').innerHTML=[['all',`전체 ${ISSUES.length}`],['err',`오류 ${e}`],['warn',`경고 ${w}`],['floor',`현재 층`]].map(([k,t])=>`<button class="chip ${UI.filter===k?'on':''}" data-act="filter" data-v="${k}">${t}</button>`).join('');
+  const list=ISSUES.filter(i=>UI.filter==='all'||(UI.filter==='floor'?i.floor===UI.floor:i.sev===UI.filter));$('#issCount').textContent=list.length;
+  $('#issList').innerHTML=list.length?list.map(i=>`<button class="iss-item ${UI.issue===i.key?'on':''}" data-act="pickIssue" data-key="${esc(i.key)}"><span class="badge ${i.sev==='err'?'b-err':'b-warn'}">${i.sev==='err'?'오류':'경고'}</span><span class="t"><b>${i.rule} <span class="muted mono" style="font-weight:400;font-size:11px">${i.floor}</span></b><small>${esc(i.target)}</small></span><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#8A877F" stroke-width="1.6"><path d="M5 3l4 4-4 4"/></svg></button>`).join(''):
+    `<div style="padding:16px;border-radius:8px;background:var(--oksoft);color:var(--ok)"><b>이슈 없음</b><div style="font-size:12px;margin-top:2px">${S.nodes.length?'검수 규칙 6종을 모두 통과했습니다.':'네트워크를 생성하면 자동으로 검수합니다.'}</div></div>`;
+}
+function centerOn(x,y){const v=VIEWS.edSvg;if(!v)return;v.ox=x-v.W/(2*v.k);v.oy=y+v.H/(2*v.k);v.user=true;}
+function hitTest(v,p){let best=null,bd=COARSE?20:10;for(const n of S.nodes){if(n.floor!==UI.floor)continue;if(n.type==='poi'?!UI.layers.poi:!UI.layers.node)continue;const s=toS(v,n.x,n.y);const d=Math.hypot(s[0]-p[0],s[1]-p[1]);if(d<bd){bd=d;best={kind:'node',id:n.id};}}if(best)return best;
+  if(!UI.layers.link)return null;bd=6;for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b||a.floor!==UI.floor||b.floor!==UI.floor)continue;const r=proj(p,toS(v,a.x,a.y),toS(v,b.x,b.y));if(r.d<bd){bd=r.d;best={kind:'link',id:l.id};}}return best;}
+function setupEditor(){
+  const ed=$('#edSvg');let drag=null;const pt=e=>{const r=ed.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
+  ed.addEventListener('contextmenu',e=>e.preventDefault());
+  ed.addEventListener('mousedown',e=>{if(!S.nodes.length||!UI.floor)return;const v=VIEWS.edSvg;if(!v)return;const p=pt(e),w=toW(v,p),hit=hitTest(v,p);const pan={mode:'pan',p0:p,ox:v.ox,oy:v.oy,moved:false};
+    if(e.button!==0){drag=pan;return;}const t=UI.tool;
+    if(t==='select'){if(hit){UI.sel=hit;UI.issue=null;if(hit.kind==='node')drag={mode:'node',id:hit.id,p0:p,moved:false};renderEditor();return;}drag={...pan,clear:true};return;}
+    if(t==='node'){if(hit&&hit.kind==='node'){UI.sel=hit;renderEditor();return;}pushUndo();const n=hit&&hit.kind==='link'?splitLink(hit.id,w):newNode(UI.floor,w[0],w[1],'corridor');UI.sel={kind:'node',id:n.id};afterChange();return;}
+    if(t==='link'){
+      if(hit&&hit.kind==='node'){if(UI.pendingLink&&UI.pendingLink!==hit.id){pushUndo();const l=manualLink(NI.get(UI.pendingLink),NI.get(hit.id));if(!l)undoStack.pop();else UI.sel={kind:'link',id:l.id};UI.pendingLink=hit.id;afterChange();}else{UI.pendingLink=hit.id;renderEditor();}return;}
+      if(UI.pendingLink){pushUndo();const n=hit&&hit.kind==='link'?splitLink(hit.id,w):newNode(UI.floor,w[0],w[1],'corridor');manualLink(NI.get(UI.pendingLink),n);UI.pendingLink=n.id;afterChange();return;}
+      drag=pan;return;}
+    if(t==='del'){if(hit){pushUndo();hit.kind==='node'?deleteNode(hit.id):deleteLink(hit.id);UI.sel=null;afterChange();}else drag=pan;}
+  });
+  window.addEventListener('mousemove',e=>{if(UI.step!==4)return;const v=VIEWS.edSvg;if(!v)return;const p=pt(e);
+    const inside=p[0]>=0&&p[1]>=0&&p[0]<=v.W&&p[1]<=v.H;if(inside){const w=toW(v,p);const c=$('#edCursor');if(c)c.textContent=`X ${fmt(w[0]+S.meta.offset[0],2)} · Y ${fmt(w[1]+S.meta.offset[1],2)}`;if(UI.pendingLink){UI.cursor=w;if(!drag)drawEditorMap();}}
+    if(!drag)return;if(Math.hypot(p[0]-drag.p0[0],p[1]-drag.p0[1])>3)drag.moved=true;
+    if(drag.mode==='pan'){v.ox=drag.ox-(p[0]-drag.p0[0])/v.k;v.oy=drag.oy+(p[1]-drag.p0[1])/v.k;v.user=true;drawEditorMap();}
+    else if(drag.mode==='node'&&drag.moved){if(!drag.snap){pushUndo();drag.snap=true;}const n=NI.get(drag.id);const w=toW(v,p);n.x=w[0];n.y=w[1];if(n.src==='auto')n.edited=true;drawEditorMap();}
+  });
+  window.addEventListener('mouseup',()=>{if(!drag)return;const d=drag;drag=null;if(d.mode==='pan'&&!d.moved&&d.clear&&(UI.sel||UI.issue)){UI.sel=null;UI.issue=null;renderEditor();}if(d.mode==='node'&&d.snap)afterChange();});
+  ed.addEventListener('wheel',e=>{e.preventDefault();const v=VIEWS.edSvg;if(!v)return;zoomAt(v,pt(e),e.deltaY<0?1.15:1/1.15);drawEditorMap();},{passive:false});
+  window.addEventListener('keydown',e=>{if(VIEW!=='app'||UI.step!==4||$('#modal').innerHTML||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName))return;const k=e.key.toLowerCase();
+    if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;
+    const map={v:'select',n:'node',l:'link',d:'del'};if(map[k]){UI.tool=map[k];UI.pendingLink=null;renderEditor();return;}
+    if(k==='escape'){UI.pendingLink=null;UI.sel=null;UI.issue=null;renderEditor();return;}
+    if((k==='delete'||k==='backspace')&&UI.sel){e.preventDefault();ACT.delSel();}});
+}
+
+/* ---------------- 5. 길찾기 ---------------- */
+function buildGraph(wheel){const adj=new Map();S.nodes.forEach(n=>adj.set(n.id,[]));for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b)continue;if(wheel&&(!l.wheel||l.type==='stair'))continue;const c=linkCost(l);adj.get(a.id).push([b.id,c,l]);if(l.bidir)adj.get(b.id).push([a.id,c,l]);}return adj;}
+function dijkstra(adj,src,dst){const dist=new Map([[src,0]]),prev=new Map(),h=[[0,src]];
+  const push=x=>{h.push(x);let i=h.length-1;while(i>0){const p=(i-1)>>1;if(h[p][0]<=h[i][0])break;[h[p],h[i]]=[h[i],h[p]];i=p;}};
+  const pop=()=>{const top=h[0],last=h.pop();if(h.length){h[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<h.length&&h[l][0]<h[m][0])m=l;if(r<h.length&&h[r][0]<h[m][0])m=r;if(m===i)break;[h[m],h[i]]=[h[i],h[m]];i=m;}}return top;};
+  while(h.length){const[d,u]=pop();if(d>(dist.get(u)??Infinity))continue;if(u===dst)break;for(const[v,c,l]of adj.get(u)||[]){const nd=d+c;if(nd<(dist.get(v)??Infinity)){dist.set(v,nd);prev.set(v,[u,l]);push([nd,v]);}}}
+  if(!dist.has(dst))return null;const path=[dst],edges=[];let cur=dst;while(cur!==src){const[p,l]=prev.get(cur);edges.unshift(l);path.unshift(p);cur=p;}return{path,edges,cost:dist.get(dst)};}
+function describe(r){const P=r.path.map(id=>NI.get(id));const out=[`${P[0].floor} ${P[0].name||P[0].id}에서 출발`];let acc=0,prev=null;
+  const flush=s=>{if(acc>0.05)out.push(`${fmt(acc)} m 이동${s||''}`);acc=0;};
+  for(let i=0;i<r.edges.length;i++){const a=P[i],b=P[i+1];if(a.floor!==b.floor){flush();prev=null;const pre=`${r.edges[i].type==='ev'?'엘리베이터':'계단'}(${a.name||a.id})로 `;if(out[out.length-1].startsWith(pre))out[out.length-1]=`${pre}${b.floor}까지 이동`;else out.push(`${pre}${b.floor} 이동`);continue;}
+    const dir=[b.x-a.x,b.y-a.y];const L=Math.hypot(...dir);if(L<0.01)continue;
+    if(prev){const ang=Math.atan2(prev[0]*dir[1]-prev[1]*dir[0],prev[0]*dir[0]+prev[1]*dir[1])*180/Math.PI;if(Math.abs(ang)>35)flush(ang>0?' 후 좌회전':' 후 우회전');}acc+=L;prev=dir;}
+  flush();const z=P[P.length-1];out.push(`${z.floor} ${z.name||z.id} 도착`);return out;}
+function runRoute(from,to,wheel,silent){
+  const adj=buildGraph(wheel);const r=dijkstra(adj,from,to);const A=NI.get(from),B=NI.get(to);
+  let res;
+  if(r){const dist=r.edges.reduce((s,l)=>s+linkLen(l),0);res={ok:true,from,to,wheel,path:r.path,edges:r.edges,dist,time:r.cost/1.2,floors:[...new Set(r.path.map(id=>NI.get(id).floor))],steps:describe(r)};}
+  else{const deg=id=>S.links.some(l=>l.a===id||l.b===id);let reason;
+    if(!deg(to))reason=`도착지 '${B.name}'이 네트워크에 연결되어 있지 않습니다 (R-02 POI 미연결).`;
+    else if(!deg(from))reason=`출발지 '${A.name}'이 네트워크에 연결되어 있지 않습니다 (R-02 POI 미연결).`;
+    else if(A.floor!==B.floor)reason=`${A.floor}에서 ${B.floor}로 이어지는 ${wheel?'휠체어 이용 가능한 ':''}층간 연결이 없습니다${wheel?' (휠체어 경로는 계단을 쓸 수 없습니다)':''}. 층간 연결 누락(R-05) 이슈를 확인하세요.`;
+    else reason='두 지점이 서로 다른 네트워크 조각에 있습니다 (R-06 분리된 네트워크).';
+    res={ok:false,from,to,wheel,reason,path:[],floors:[A.floor]};}
+  UI.route=res;UI.routeFloor=res.floors[0];T3.dirty=true;
+  UI.history=[res,...UI.history.filter(h=>!(h.from===from&&h.to===to&&h.wheel===wheel))].slice(0,8);
+  if(!silent)renderRoute();return res;}
+function reachability(wheel){const adj=buildGraph(wheel);const pois=S.nodes.filter(n=>n.type==='poi');let ok=0,total=0;const fails=new Map();
+  for(const p of pois){const seen=new Set([p.id]);const st=[p.id];while(st.length){const u=st.pop();for(const[v]of adj.get(u)||[])if(!seen.has(v)){seen.add(v);st.push(v);}}
+    for(const q of pois){if(q===p)continue;total++;if(seen.has(q.id))ok++;else{fails.set(q.id,(fails.get(q.id)||0)+1);fails.set(p.id,(fails.get(p.id)||0)+1);}}}
+  const arr=[...fails.entries()].sort((a,b)=>b[1]-a[1]);const max=arr[0]?.[1]||0;
+  return{ok,total,wheel,fails:arr.filter(x=>x[1]>=max*0.5).slice(0,6)};}
+function fmtTime(s){s=Math.round(s);return s<60?`${s}초`:`${Math.floor(s/60)}분 ${s%60}초`;}
+function renderRoute(){
+  const has=S.nodes.length>0;$('#rtEmpty').hidden=has;if(!has){$('#rtEmpty').innerHTML=S.floors.length?`<b>아직 네트워크가 없습니다</b><div>③ 네트워크 생성 후 테스트할 수 있습니다.</div><button class="btn pri" data-go="3">네트워크 생성으로 이동</button>`:emptyHtml('불러온 데이터가 없습니다');$('#rtLeft').innerHTML='';$('#rtRight').innerHTML='';$('#rtFloors').innerHTML='';return;}
+  const pois=S.nodes.filter(n=>n.type==='poi');const r=UI.route;
+  const sel0=r?.from||pois[0]?.id,sel1=r?.to||pois[Math.min(pois.length-1,4)]?.id;
+  const opts=v=>sortedFloors().map(f=>`<optgroup label="${f.id}">${pois.filter(p=>p.floor===f.id).map(p=>`<option value="${p.id}" ${p.id===v?'selected':''}>${esc(p.name)}</option>`).join('')}</optgroup>`).join('');
+  $('#rtLeft').innerHTML=`<h1 style="margin:0;font-size:20px">길찾기 테스트</h1>
+  <label style="display:flex;flex-direction:column;gap:4px;font-size:12px" class="muted">출발<select class="inp" id="rtFrom" style="height:40px;font-size:14px;color:var(--ink)">${opts(sel0)}</select></label>
+  <div style="display:flex;justify-content:center;margin:-6px 0"><button class="btn sm" data-act="swap" aria-label="출발·도착 바꾸기">⇅ 바꾸기</button></div>
+  <label style="display:flex;flex-direction:column;gap:4px;font-size:12px" class="muted">도착<select class="inp" id="rtTo" style="height:40px;font-size:14px;color:var(--ink)">${opts(sel1)}</select></label>
+  <label class="chk"><input type="checkbox" id="rtWheel" ${UI.wheel?'checked':''}>휠체어 경로 (계단·통행 불가 링크 제외)</label>
+  <button class="btn pri lg" data-act="route">경로 계산</button>
+  ${r?r.ok?`<div style="display:flex;flex-direction:column;gap:12px;padding:14px;border-radius:10px;background:var(--bg)">
+    <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px"><div><div class="h3" style="margin:0">거리</div><b class="mono" style="font-size:19px">${fmt(r.dist)} m</b></div><div><div class="h3" style="margin:0">예상 시간</div><b class="mono" style="font-size:19px">${fmtTime(r.time)}</b></div><div><div class="h3" style="margin:0">경유 노드</div><b class="mono" style="font-size:19px">${r.path.length}</b></div></div>
+    <ol style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:5px;line-height:1.5">${r.steps.map(s=>`<li>${esc(s)}</li>`).join('')}</ol></div>`:
+    `<div style="display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:10px;background:var(--errsoft);border:1px solid var(--err)"><b style="color:var(--errink);font-size:15px">경로를 찾을 수 없음</b><span style="line-height:1.55">${esc(r.reason)}</span><button class="btn" style="align-self:flex-start" data-act="openIssueFor">편집기에서 이슈 보기</button></div>`:''}
+  <p class="muted" style="margin:auto 0 0;font-size:12px;line-height:1.5">예상 시간: 보행 1.2 m/s, 계단은 높이×2.5, 엘리베이터는 대기 15초를 더해 계산합니다.</p>`;
+  const floors=r?(r.floors.length?r.floors:[NI.get(r.from).floor]):[UI.routeFloor||sortedFloors()[0].id];if(!UI.routeFloor||!S.floors.some(f=>f.id===UI.routeFloor))UI.routeFloor=floors[0];
+  $('#rtFloors').innerHTML=sortedFloors().map(f=>`<button class="chip ${UI.routeFloor===f.id?'on':''}" data-act="rtFloor" data-v="${f.id}">${f.id}${r&&r.floors.includes(f.id)?' ●':''}</button>`).join('');
+  const rc=UI.reach;
+  $('#rtRight').innerHTML=`<section style="display:flex;flex-direction:column;gap:8px"><h2 style="margin:0;font-size:14px">테스트 기록</h2>
+    ${UI.history.length?UI.history.map((h,i)=>`<button class="hist" data-act="replay" data-i="${i}"><span class="res ${h.ok?'ok':'fail'}">${h.ok?'✓':'✕'}</span><span style="display:flex;flex-direction:column;gap:2px;min-width:0"><b>${esc(NI.get(h.from)?.name)} → ${esc(NI.get(h.to)?.name)}</b><span class="mono muted" style="font-size:11px">${h.ok?`${fmt(h.dist)} m · ${h.floors.join('→')}`:'실패'}${h.wheel?' · 휠체어':''}</span></span></button>`).join(''):'<p class="muted" style="margin:0">경로를 계산하면 여기에 쌓입니다.</p>'}</section>
+  <section class="card" style="padding:14px;gap:10px"><h2 style="font-size:14px">전체 도달성 검사</h2>
+    ${rc?`<div style="display:flex;align-items:baseline;gap:6px"><b class="mono" style="font-size:28px">${rc.ok}</b><span class="mono muted">/ ${rc.total} 쌍 도달 가능${rc.wheel?' (휠체어)':''}</span></div>
+    <div style="height:8px;border-radius:4px;background:var(--errbadge);overflow:hidden"><div style="width:${rc.total?rc.ok/rc.total*100:0}%;height:100%;background:var(--blue)"></div></div>
+    ${rc.fails.length?`<div style="font-size:12px;line-height:1.6"><b>실패가 많은 POI (출발·도착 합계)</b>${rc.fails.map(([id,c])=>`<div style="display:flex;justify-content:space-between"><button class="link" data-act="openNode" data-id="${id}">${NI.get(id)?.floor} ${esc(NI.get(id)?.name)}</button><span class="mono">${c}쌍</span></div>`).join('')}</div>`:'<span style="color:var(--ok)">모든 POI 쌍이 서로 도달 가능합니다.</span>'}`:
+    '<p class="muted" style="margin:0">모든 POI 쌍(출발→도착)에 대해 경로가 존재하는지 검사합니다.</p>'}
+    <button class="btn" data-act="reach">${rc?'다시 검사':'검사 실행'} (현재 휠체어 옵션 기준)</button></section>`;
+  requestAnimationFrame(drawRouteMap);
+}
+function drawRouteMap(){const r=UI.route;const f=UI.routeFloor;if(!f)return;const runs=[];
+  if(r&&r.ok){let cur=[];for(const id of r.path){const n=NI.get(id);if(n.floor===f)cur.push(n);else if(cur.length){runs.push(cur);cur=[];}}if(cur.length)runs.push(cur);}
+  const pins=[];if(r){pins.push({n:NI.get(r.from),t:'출',color:'#1C1D1F'});pins.push({n:NI.get(r.to),t:r.ok?'도':'!',color:r.ok?'#2F5BD3':'#B4410C'});}
+  renderMap($('#rtSvg'),f,{dim:true,route:runs,pins,markers:false});}
+
+/* ---------------- 6. 내보내기 ---------------- */
+function renderExport(){
+  const has=S.floors.length>0;const[ox,oy]=S.meta.offset;
+  $('#exMain').innerHTML=`<div><h1 style="margin:0;font-size:24px">내보내기</h1><p class="muted" style="margin:4px 0 0;font-size:14px">검수를 마친 네트워크를 파일로 내보내거나 프로젝트를 저장·불러옵니다. 좌표는 원래 좌표계(${esc(S.meta.crs)})로 되돌려 저장합니다.</p></div>
+  ${has?`<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+    <div class="tile"><span class="h3" style="margin:0">층</span><span class="v">${S.floors.length}</span></div><div class="tile"><span class="h3" style="margin:0">노드</span><span class="v">${S.nodes.length}</span></div>
+    <div class="tile"><span class="h3" style="margin:0">링크</span><span class="v">${S.links.length}</span></div><div class="tile" style="${ISSUES.length?'border-color:var(--err)':''}"><span class="h3" style="margin:0">남은 이슈</span><span class="v" style="color:${ISSUES.length?'var(--errink)':'var(--ok)'}">${ISSUES.length}</span></div></div>
+  ${ISSUES.filter(i=>i.sev==='err').length?`<div class="card" style="flex-direction:row;align-items:center;background:var(--errsoft);border-color:var(--err)"><span style="flex:1"><b>오류 ${ISSUES.filter(i=>i.sev==='err').length}건이 남아 있습니다.</b> 내보낼 수는 있지만, 길찾기에서 일부 경로가 실패할 수 있습니다.</span><button class="btn" data-go="4">검수·편집으로</button></div>`:''}`:''}
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+    <section class="card"><h2>네트워크 (GeoJSON)</h2><p class="muted" style="margin:0;line-height:1.6">노드는 Point, 링크는 LineString으로 저장합니다. 층·유형·양방향·휠체어 속성이 포함됩니다.</p><button class="btn pri" data-act="exGeo" ${S.nodes.length?'':'disabled'}>network.geojson 내려받기</button></section>
+    <section class="card"><h2>3D 모델 (glTF)</h2><p class="muted" style="margin:0;line-height:1.6">현재 3D 보기 장면(벽·바닥·네트워크)을 .glb 파일로 저장합니다. Blender 등에서 열 수 있습니다.</p><button class="btn" data-act="gltf" ${has?'':'disabled'}>model.glb 내려받기</button></section>
+    <section class="card"><h2>프로젝트 파일</h2><p class="muted" style="margin:0;line-height:1.6">공간·POI·네트워크·예외 처리까지 모두 담긴 작업 파일입니다. 작업은 이 브라우저에 자동 저장됩니다.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="exProj" ${has?'':'disabled'}>저장 (.json)</button><label class="btn">불러오기<input type="file" id="fileProj" accept=".json" hidden></label><button class="btn danger" data-act="reset">초기화</button></div></section>
+  </div>`;
+}
+function exportGeo(){const[ox,oy]=S.meta.offset;const F=[];
+  for(const n of S.nodes)F.push({type:'Feature',properties:{id:n.id,floor:n.floor,type:n.type,name:n.name||null,src:n.src},geometry:{type:'Point',coordinates:[+(n.x+ox).toFixed(3),+(n.y+oy).toFixed(3)]}});
+  for(const l of S.links){const a=NI.get(l.a),b=NI.get(l.b);if(!a||!b)continue;F.push({type:'Feature',properties:{id:l.id,from:a.id,to:b.id,floor_from:a.floor,floor_to:b.floor,type:l.type,length_m:+linkLen(l).toFixed(2),bidirectional:l.bidir,wheelchair:l.wheel,src:l.src},geometry:{type:'LineString',coordinates:[[+(a.x+ox).toFixed(3),+(a.y+oy).toFixed(3)],[+(b.x+ox).toFixed(3),+(b.y+oy).toFixed(3)]]}});}
+  download('network.geojson',JSON.stringify({type:'FeatureCollection',name:S.meta.name,crs_note:S.meta.crs,features:F}),'application/geo+json');}
+async function exportGltf(){if(!init3D()){toast('Three.js를 불러오지 못해 내보낼 수 없습니다');return;}if(T3.dirty)build3D();
+  try{if(!THREE.GLTFExporter)await loadScript('https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/exporters/GLTFExporter.js');
+    new THREE.GLTFExporter().parse(T3.root,res=>download('model.glb',new Blob([res],{type:'model/gltf-binary'})),{binary:true});}catch(e){toast('glTF 내보내기 실패: '+(e.message||e));}}
+
+/* ---------------- 이벤트 ---------------- */
+const ACT={
+  loadSample(){setState(sampleState());toast('샘플 프로젝트를 불러왔습니다');go(2);},
+  dlSample(){sampleFiles();toast('샘플 파일 2개를 내려받습니다');},
+  applyUpload(){applyUpload();},
+  generate(){generate();},
+  genDefault(){S.params={...DEF_PARAMS};renderGen();},
+  genFloor(b){UI.genFloor=b.dataset.v;renderGen();},
+  v3focus(b){T3.focus=b.dataset.v;render3DScreen();},
+  cam(b){cam(b.dataset.v);},
+  gltf(){exportGltf();},
+  floor(b){UI.floor=b.dataset.v;UI.sel=null;UI.pendingLink=null;renderEditor();},
+  tool(b){UI.tool=b.dataset.v;UI.pendingLink=null;renderEditor();},
+  undo(){undo();},redo(){redo();},
+  zoom(b){const v=VIEWS.edSvg;if(!v)return;zoomAt(v,[v.W/2,v.H/2],+b.dataset.v);drawEditorMap();},
+  fit(){delete VIEWS.edSvg;drawEditorMap();},
+  revalidate(){S.ignored={};validate();renderEditor();toast(`검수 완료 · 이슈 ${ISSUES.length}건 (예외 처리 초기화)`);},
+  filter(b){UI.filter=b.dataset.v;renderIssues();},
+  pickIssue(b){const is=ISSUES.find(i=>i.key===b.dataset.key);if(!is)return;UI.issue=is.key;UI.sel=null;if(UI.floor!==is.floor){UI.floor=is.floor;}renderEditor();centerOn(is.x,is.y);drawEditorMap();},
+  gotoIssue(){const is=ISSUES.find(i=>i.key===UI.issue);if(is){UI.floor=is.floor;renderEditor();const v=VIEWS.edSvg;v.k=Math.max(v.k,v.k0*2);centerOn(is.x,is.y);drawEditorMap();}},
+  fix(){const is=ISSUES.find(i=>i.key===UI.issue);if(is)fixIssue(is);},
+  ignore(){S.ignored[UI.issue]=true;UI.issue=null;afterChange();toast('예외 처리했습니다 · "검수 다시 실행"으로 되살릴 수 있습니다');},
+  clearSel(){UI.sel=null;UI.issue=null;renderEditor();},
+  selNode(b){const n=NI.get(b.dataset.id);if(!n)return;UI.floor=n.floor;UI.sel={kind:'node',id:n.id};UI.issue=null;renderEditor();},
+  selLink(b){UI.sel={kind:'link',id:b.dataset.id};UI.issue=null;renderEditor();},
+  delLink(b){pushUndo();deleteLink(b.dataset.id);afterChange();},
+  delSel(){const s=UI.sel;if(!s)return;pushUndo();s.kind==='node'?deleteNode(s.id):deleteLink(s.id);UI.sel=null;afterChange();},
+  splitSel(){const l=S.links.find(x=>x.id===UI.sel?.id);if(!l)return;const a=NI.get(l.a),b=NI.get(l.b);if(a.floor!==b.floor){toast('층간 링크는 분할할 수 없습니다');return;}pushUndo();const n=splitLink(l.id,[(a.x+b.x)/2,(a.y+b.y)/2]);UI.sel={kind:'node',id:n.id};afterChange();},
+  startLink(){UI.tool='link';UI.pendingLink=UI.sel.id;renderEditor();},
+  openNode(b){const n=NI.get(b.dataset.id);if(!n)return;UI.floor=n.floor;const is=ISSUES.find(i=>i.ids.includes(n.id));UI.issue=is?is.key:null;UI.sel=is?null:{kind:'node',id:n.id};go(4);requestAnimationFrame(()=>{centerOn(n.x,n.y);drawEditorMap();});},
+  openIssueFor(){const r=UI.route;const cand=ISSUES.find(i=>i.ids.includes(r.to)||i.ids.includes(r.from))||ISSUES.find(i=>i.code==='R-05')||ISSUES[0];if(cand){UI.issue=cand.key;UI.floor=cand.floor;UI.sel=null;}go(4);if(cand)requestAnimationFrame(()=>{centerOn(cand.x,cand.y);drawEditorMap();});},
+  route(){UI.wheel=$('#rtWheel').checked;const a=$('#rtFrom').value,b=$('#rtTo').value;if(a===b){toast('출발지와 도착지가 같습니다');return;}runRoute(a,b,UI.wheel);renderHeader();},
+  swap(){const a=$('#rtFrom'),b=$('#rtTo');const t=a.value;a.value=b.value;b.value=t;},
+  replay(b){const h=UI.history[+b.dataset.i];if(h){UI.wheel=h.wheel;runRoute(h.from,h.to,h.wheel);}},
+  rtFloor(b){UI.routeFloor=b.dataset.v;renderRoute();},
+  reach(){UI.wheel=$('#rtWheel').checked;UI.reach=reachability(UI.wheel);renderRoute();},
+  exGeo(){exportGeo();},
+  exProj(){download((S.meta.name||'project')+'.json',JSON.stringify(S),'application/json');},
+  reset(){if(!confirm('현재 프로젝트를 지우고 처음 상태로 돌아갈까요? (되돌릴 수 없습니다)'))return;try{localStorage.removeItem(projKey());}catch(e){}setState(emptyState());UI.history=[];T3.visited=false;UI.visitedEdit=false;go(1);},
+};
+document.addEventListener('click',e=>{const g=e.target.closest('[data-go]');if(g){go(+g.dataset.go);return;}const b=e.target.closest('[data-act]');if(b&&ACT[b.dataset.act]){ACT[b.dataset.act](b,e);}});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.dataset.layer){UI.layers[t.dataset.layer]=t.checked;drawEditorMap();return;}
+  if(t.dataset.p){const k=t.dataset.p;S.params[k]=t.type==='checkbox'?t.checked:t.type==='range'?parseFloat(t.value):t.value;save();renderGen();return;}
+  if(t.dataset.v3){T3.show[t.dataset.v3]=t.checked;build3D();return;}
+  if(t.id==='v3Wall'||t.id==='v3Gap'){return;}
+  if(t.dataset.pf){const s=UI.sel;if(!s)return;pushUndo();
+    if(s.kind==='node'){const n=NI.get(s.id);if(t.dataset.pf==='ntype')n.type=t.value;if(t.dataset.pf==='nx')n.x=parseFloat(t.value)||n.x;if(t.dataset.pf==='ny')n.y=parseFloat(t.value)||n.y;if(n.src==='auto')n.edited=true;}
+    else{const l=S.links.find(x=>x.id===s.id);if(t.dataset.pf==='ltype'){l.type=t.value;if(l.type==='stair')l.wheel=false;}if(t.dataset.pf==='lbidir')l.bidir=t.checked;if(t.dataset.pf==='lwheel')l.wheel=t.checked;if(l.src==='auto')l.edited=true;}
+    afterChange();return;}
+  if(t.dataset.up){const k=t.dataset.up;if(k==='role')UP.roles[t.dataset.v]=t.value;else if(k==='pm')UP.pm[t.dataset.k]=t.value;else UP[k]=t.value;if(k==='typeF')UP.roles={};renderUpload();return;}
+  if(t.id==='fileSp'&&t.files[0])onSpatialFile(t.files[0]);
+  if(t.id==='filePoi'&&t.files[0])onPoiFile(t.files[0]);
+  if(t.id==='fileProj'&&t.files[0]){readText(t.files[0]).then(tx=>{try{const o=JSON.parse(tx);if(!o.floors)throw 0;setState({...emptyState(),...o,params:{...DEF_PARAMS,...(o.params||{})}});toast('프로젝트를 불러왔습니다');go(2);}catch(e){toast('프로젝트 파일 형식이 아닙니다');}});}
+  t.value&&t.type==='file'&&(t.value='');
+});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='v3Wall'){T3.wallH=parseFloat(t.value);$('#v3WallV').textContent=fmt(T3.wallH)+' m';build3D();}
+  if(t.id==='v3Gap'){T3.gap=parseFloat(t.value);$('#v3GapV').textContent=fmt(T3.gap)+'×';T3.resetCam=false;build3D();}
+  if(t.dataset.p&&t.type==='range'){const span=t.parentElement.querySelector('.mono');if(span)span.textContent=fmt(t.value)+' m';}
+});
+for(const[zone,input]of[['#dropSp','#fileSp'],['#dropPoi','#filePoi']]){const z=$(zone);
+  z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('over');});z.addEventListener('dragleave',()=>z.classList.remove('over'));
+  z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('over');const f=e.dataTransfer.files[0];if(!f)return;input==='#fileSp'?onSpatialFile(f):onPoiFile(f);});}
+window.addEventListener('resize',()=>{if(UI.step===4)drawEditorMap();if(UI.step===5)drawRouteMap();if(UI.step===3&&$('#genSvg'))renderMap($('#genSvg'),UI.genFloor||sortedFloors()[0]?.id,{});});
+
+/* =====================================================================
+   계정 · 프로젝트 관리 (목업)
+   로그인/회원가입/프로젝트 목록/팀·권한. 서버 없이 이 브라우저의 localStorage에만 저장합니다.
+   ===================================================================== */
+const DB_KEY='indoor-net-db-v2',SESS_KEY='indoor-net-session-v1';
+const AV_COLORS=['#2F5BD3','#1F5C38','#B4410C','#6B4FBB','#0B2475','#8A6200'];
+const ROLES=['관리자','편집자','검수자','뷰어'];
+const ROLE_DESC={'관리자':'프로젝트·멤버 관리 포함 모든 권한','편집자':'업로드·생성·편집·내보내기','검수자':'검수 이슈 처리·길찾기 테스트','뷰어':'결과 조회·길찾기 테스트만'};
+const PERMS=[['데이터 업로드',[1,1,0,0]],['네트워크 생성',[1,1,0,0]],['노드·링크 편집',[1,1,0,0]],['검수 이슈 예외 처리',[1,1,1,0]],['길찾기 테스트',[1,1,1,1]],['내보내기',[1,1,1,0]],['프로젝트·멤버 관리',[1,0,0,0]]];
+const HR=3600e3,DY=24*HR;
+let DB=null,ME=null,CUR=null,VIEW='auth',DTAB='projects',AUTHMODE='login',PFILTER='all',PQUERY='',PENDING=null,NOTICE=null,resendT=null;
+
+function lsGet(k){try{const t=localStorage.getItem(k);return t?JSON.parse(t):null;}catch(e){return null;}}
+function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function lsDel(k){try{localStorage.removeItem(k);}catch(e){}}
+const projKey=(id=CUR?.id)=>LS_KEY+':'+id;
+const readProj=id=>lsGet(projKey(id));
+const saveDB=()=>lsSet(DB_KEY,DB);
+const userOf=id=>DB.users.find(u=>u.id===id);
+const isActive=u=>u.verified&&!u.removed;
+const isAdmin=()=>ME&&ME.role==='관리자';
+const av=(u,cls='')=>u?`<span class="avatar ${cls}" style="background:${AV_COLORS[(u.c||0)%AV_COLORS.length]}" title="${esc(u.name)}">${esc(u.name.length>2?u.name.slice(-2):u.name)}</span>`:'';
+function rel(t){const s=(Date.now()-t)/1000;if(s<60)return'방금 전';if(s<3600)return Math.floor(s/60)+'분 전';if(s<86400)return Math.floor(s/3600)+'시간 전';if(s<7*86400)return Math.floor(s/86400)+'일 전';return new Date(t).toLocaleDateString('ko-KR');}
+const ICON={
+  back:'<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>',
+  down:'<svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M3.5 5.5L7 9l3.5-3.5"/></svg>',
+  dots:'<svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><circle cx="3.5" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.5" cy="8" r="1.4"/></svg>',
+  plus:'<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M9 3v12M3 9h12"/></svg>',
+  search:'<svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.8"/><path d="M10.6 10.6L14 14"/></svg>',
+  upload:'<svg width="26" height="26" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M14 18V5M9 10l5-5 5 5M5 18v4h18v-4"/></svg>',
+  mail:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><rect x="3" y="6" width="20" height="14" rx="2"/><path d="M4 7.5l9 6.5 9-6.5"/></svg>',
+  check:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.5l4.5 4.5L20 8.5"/></svg>',
+  key:'<svg width="26" height="26" viewBox="0 0 26 26" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="9" cy="13" r="4.5"/><path d="M13.5 13H22M19 13v3.5M22 13v2.5"/></svg>',
+};
+
+/* ---------- 초기 데이터 ---------- */
+function seedDB(){const now=Date.now();return{
+  users:[{id:'u1',name:'김도윤',email:'demo@indoor.dev',pw:'demo1234',org:'공간정보 설계팀',role:'관리자',c:0,last:now-10*60e3,verified:true},
+    {id:'u2',name:'박서준',email:'seojun@indoor.dev',pw:null,org:'공간정보 설계팀',role:'관리자',c:1,last:now-2*HR,verified:true},
+    {id:'u3',name:'최지우',email:'jiwoo@indoor.dev',pw:null,org:'공간정보 설계팀',role:'편집자',c:3,last:now-20*HR,verified:true},
+    {id:'u4',name:'정하은',email:'haeun@indoor.dev',pw:null,org:'공간정보 설계팀',role:'검수자',c:2,last:now-5*HR,verified:true}],
+  invites:[],
+  projects:[
+    {id:'p-eng',name:'공학관 실내 네트워크',building:'공학관',crs:'EPSG:5186',desc:'샘플 데이터 기반 1차 구축 · 2F 출입문 누락 검수 중',owner:'u2',members:['u2','u1','u3','u4'],created:now-6*DY,updated:now-2*HR,seed:'sample',done:[true,true,true,true,false,false],lastStep:4},
+    {id:'p-stu',name:'학생회관 리모델링',building:'학생회관',crs:'EPSG:5186',desc:'리모델링 도면(SHP) 수령 후 업로드 예정',owner:'u3',members:['u3','u1'],created:now-1*DY,updated:now-20*HR,seed:null,done:Array(6).fill(false),lastStep:1}],
+  activity:[{u:'u2',t:'2F 링크 3개 수정',p:'p-eng',at:now-2*HR},{u:'u4',t:'검수 이슈 2건 예외 처리',p:'p-eng',at:now-5*HR},{u:'u3',t:'프로젝트 생성',p:'p-stu',at:now-20*HR},
+    {u:'u1',t:'길찾기 테스트 12회 실행',p:'p-eng',at:now-1.5*DY},{u:'u2',t:'네트워크 생성 (복도 중심선)',p:'p-eng',at:now-3*DY},{u:'u2',t:'공간정보·POI 업로드 (3개 층)',p:'p-eng',at:now-6*DY}]};}
+// 샘플 데이터를 해당 프로젝트 저장소에 채워 둔다 (gen=true면 네트워크까지 생성)
+function seedSample(p,gen){const prev=CUR;CUR=p;window.__quiet=true;
+  try{setState(sampleState());S.meta.name=p.name;if(gen)generate();saveNow(false);}finally{window.__quiet=false;CUR=prev;}}
+function logAct(t,pid=CUR?.id){if(!ME)return;DB.activity.unshift({u:ME.id,t,p:pid,at:Date.now()});DB.activity=DB.activity.slice(0,60);saveDB();}
+
+/* ---------- 프로젝트 저장 연동 ---------- */
+function syncProject(changed){if(!CUR)return;const p=CUR;
+  const d=[S.floors.length>0,S.floors.length>0&&T3.visited,S.nodes.length>0,S.nodes.length>0&&UI.visitedEdit,UI.history.length>0,false];
+  p.done=(p.done||Array(6).fill(false)).map((v,i)=>!!(v||d[i]));
+  p.stats={floors:sortedFloors().map(f=>f.id),nodes:S.nodes.length,links:S.links.length,pois:S.pois.length,issues:ISSUES.length,err:ISSUES.filter(i=>i.sev==='err').length};
+  if(changed)p.updated=Date.now();saveDB();}
+function projStatus(p){const s=p.stats||{},d=p.done||[];
+  if(d[5])return['b-ok','내보내기 완료'];if(!s.floors||!s.floors.length)return['b-gray','업로드 대기'];
+  if(!s.nodes)return['b-blue','네트워크 생성 전'];if(s.issues)return['b-warn',`검수 중 · 이슈 ${s.issues}`];return['b-ok','검수 완료'];}
+const nextStep=p=>{const i=(p.done||[]).findIndex(v=>!v);return i<0?6:i+1;};
+
+function openProject(id,step){
+  if(CUR)saveNow(true);
+  const p=DB.projects.find(x=>x.id===id);if(!p)return;
+  if(p.seed==='sample'&&!readProj(p.id))seedSample(p,true);
+  CUR=p;const st=readProj(p.id);
+  const base=emptyState();base.meta.name=p.name;
+  setState(st?{...base,...st,params:{...DEF_PARAMS,...(st.params||{})}}:base);
+  Object.assign(UP,{sp:null,spName:'',spFields:[],roles:{},poi:null,poiName:'',poiFields:[],pm:{}});
+  T3.visited=!!p.done?.[1];UI.visitedEdit=!!p.done?.[3];UI.tool='select';
+  showView('app');
+  let s=step||p.lastStep||nextStep(p);
+  if(!S.floors.length&&s>1&&!step)s=1;
+  go(s);
+}
+function leaveProject(){if(CUR){saveNow(true);CUR=null;}}
+
+/* ---------- 화면 전환 ---------- */
+const TITLES={auth:'로그인',dash:'프로젝트',app:''};
+function showView(v){VIEW=v;closeModal();closeMenus();
+  ['auth','dash','app'].forEach(k=>$('#'+k).hidden=k!==v);
+  document.title=(v==='app'?(CUR?.name||'프로젝트'):v==='dash'?(DTAB==='team'?'팀·권한':'프로젝트'):({login:'로그인',signup:'회원가입',verify:'이메일 인증',welcome:'가입 완료',reset:'비밀번호 재설정',reset2:'새 비밀번호'}[AUTHMODE]||'로그인'))+' · 실내 길찾기 네트워크';
+  renderFlow();}
+function showAuth(mode,notice){leaveProject();AUTHMODE=mode;NOTICE=notice||null;clearInterval(resendT);showView('auth');renderAuth();}
+function showDash(tab){leaveProject();if(tab)DTAB=tab;showView('dash');renderDash();}
+function closeMenus(){$$('.menu').forEach(m=>m.remove());$$('[aria-expanded="true"][data-act="userMenu"],[aria-expanded="true"][data-act="projMenu"],[aria-expanded="true"][data-act="roleMenu"]').forEach(b=>b.setAttribute('aria-expanded','false'));}
+function openModal(html,key){$('#modal').innerHTML=`<div class="modal-bg" data-act="modalBg"><div class="modal" role="dialog" aria-modal="true" data-key="${key||''}">${html}</div></div>`;
+  const f=$('#modal .modal input:not([type=checkbox]):not([type=radio]),#modal .modal button.pri');f&&f.focus();renderFlow();}
+function closeModal(){if($('#modal').innerHTML){$('#modal').innerHTML='';renderFlow();}}
+function setSession(uid,remember){try{sessionStorage.removeItem(SESS_KEY);}catch(e){}lsDel(SESS_KEY);
+  if(!uid)return;const v=JSON.stringify({uid});if(remember)lsSet(SESS_KEY,{uid});else{try{sessionStorage.setItem(SESS_KEY,v);}catch(e){}}}
+function signIn(u,remember){ME=u;u.last=Date.now();saveDB();setSession(u.id,remember);showDash('projects');toast(`${u.name}님, 환영합니다`);}
+
+/* ---------- 폼 유틸 ---------- */
+const fg=(n,l,o={})=>`<div class="fgrp"><label for="f-${n}">${l}${o.req?'<em aria-hidden="true">*</em>':''}</label>${o.pw?'<div class="pwwrap">':''}<input class="tin" id="f-${n}" name="${n}" type="${o.type||'text'}" placeholder="${esc(o.ph||'')}" autocomplete="${o.ac||'off'}" value="${esc(o.val||'')}"${o.pw?' style="padding-right:56px"':''}>${o.pw?`<button type="button" class="pwt" data-act="pwToggle" aria-label="비밀번호 표시">보기</button></div>`:''}${o.extra||''}<div class="ferr" data-err="${n}" id="e-${n}"></div></div>`;
+function fErr(form,n,msg){const e=form.querySelector(`[data-err="${n}"]`),i=form.querySelector(`[name="${n}"]`);if(e)e.textContent=msg||'';if(i){i.classList.toggle('bad',!!msg);if(msg)i.setAttribute('aria-describedby','e-'+n);else i.removeAttribute('aria-describedby');}return!msg;}
+const val=(f,n)=>(f.elements[n]?.value||'').trim();
+const emailOk=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+function pwScore(p){if(!p)return 0;let s=0;if(p.length>=8)s++;if(/[A-Za-z]/.test(p)&&/\d/.test(p))s++;if(/[^A-Za-z0-9]/.test(p))s++;if(p.length>=12)s++;return Math.max(1,s);}
+const PW_LABEL=['','약함','보통','좋음','강함'];
+const notice=()=>NOTICE?`<div class="fnote ${NOTICE[0]}" role="status">${esc(NOTICE[1])}</div>`:'';
+
+/* ---------- 인증 화면 ---------- */
+function stepper(k){const L=['정보 입력','이메일 인증','완료'];return`<div class="stepper" aria-label="가입 단계">${L.map((t,i)=>`${i?'<b></b>':''}<span class="${i===k?'on':i<k?'ok':''}"><i>${i<k?'✓':i+1}</i>${t}</span>`).join('')}</div>`;}
+function renderAuth(){const m=AUTHMODE,box=$('#auMain');let h='';
+  if(m==='login')h=`<form class="au-card" data-form="login" novalidate>
+    <div><h2>로그인</h2><p class="au-sub">프로젝트와 작업 이력은 팀 계정 단위로 관리됩니다.</p></div>${notice()}
+    <div class="demo"><div style="flex:1;min-width:0"><b>데모 계정</b><div class="mono" style="font-size:12px;margin-top:2px;color:var(--ink2)">demo@indoor.dev · demo1234</div></div><button type="button" class="btn sm" data-act="fillDemo">자동 입력</button></div>
+    ${fg('email','이메일',{type:'email',ph:'name@example.com',ac:'username'})}
+    ${fg('pw','비밀번호',{type:'password',ac:'current-password',pw:1})}
+    <div style="display:flex;align-items:center;justify-content:space-between"><label class="chk" style="min-height:0"><input type="checkbox" name="remember" checked>로그인 상태 유지</label><button type="button" class="link2" data-act="auth" data-v="reset">비밀번호를 잊으셨나요?</button></div>
+    <div class="ferr" data-err="form" role="alert"></div>
+    <button class="btn pri lg" type="submit" style="width:100%">로그인</button>
+    <div class="divider">또는</div>
+    <button type="button" class="btn lg" style="width:100%" data-act="sso">Google 계정으로 계속</button>
+    <p class="muted" style="margin:4px 0 0;text-align:center;font-size:13px">계정이 없으신가요? <button type="button" class="link2" data-act="auth" data-v="signup">회원가입</button></p></form>`;
+  else if(m==='signup')h=`<form class="au-card" data-form="signup" novalidate style="width:440px">
+    ${stepper(0)}<div><h2>회원가입</h2><p class="au-sub">가입 후 관리자가 프로젝트에 초대하면 함께 작업할 수 있습니다.</p></div>
+    <div class="row2" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">${fg('name','이름',{req:1,ph:'홍길동',ac:'name'})}${fg('org','소속',{ph:'학과·팀·기관',ac:'organization'})}</div>
+    ${fg('email','이메일',{req:1,type:'email',ph:'name@example.com',ac:'email'})}
+    <div class="fgrp"><label for="f-role">역할</label><select class="tin" id="f-role" name="role">${ROLES.map(r=>`<option ${r==='편집자'?'selected':''}>${r}</option>`).join('')}</select><div class="muted" style="font-size:12px" id="roleDesc">${ROLE_DESC['편집자']}</div></div>
+    ${fg('pw','비밀번호',{req:1,type:'password',ac:'new-password',pw:1,ph:'8자 이상, 영문·숫자 포함',extra:'<div class="meter" id="pwMeter" data-s="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="muted" style="font-size:12px" id="pwLabel">영문·숫자·특수문자를 섞으면 더 안전합니다.</div>'})}
+    ${fg('pw2','비밀번호 확인',{req:1,type:'password',ac:'new-password',pw:1})}
+    <div class="agree"><label class="chk all"><input type="checkbox" data-agree="all">전체 동의</label>
+      <label class="chk"><input type="checkbox" name="a1" data-agree="1">[필수] 서비스 이용약관 동의</label>
+      <label class="chk"><input type="checkbox" name="a2" data-agree="1">[필수] 개인정보 수집·이용 동의</label>
+      <label class="chk"><input type="checkbox" name="a3" data-agree="1">[선택] 검수 결과·초대 알림 메일 받기</label></div>
+    <div class="ferr" data-err="a1" role="alert"></div>
+    <button class="btn pri lg" type="submit" style="width:100%">인증 메일 받기</button>
+    <p class="muted" style="margin:0;text-align:center;font-size:13px">이미 계정이 있으신가요? <button type="button" class="link2" data-act="auth" data-v="login">로그인</button></p></form>`;
+  else if(m==='verify')h=`<form class="au-card" data-form="verify" novalidate>
+    ${stepper(1)}<div class="bigicon" style="background:var(--bluesoft);color:var(--blue)">${ICON.mail}</div>
+    <div><h2>이메일을 확인해 주세요</h2><p class="au-sub"><b style="color:var(--ink)">${esc(PENDING?.email||'')}</b>로 6자리 인증 코드를 보냈습니다. 10분 안에 입력해 주세요.</p></div>
+    <div class="codebox" role="group" aria-label="인증 코드 6자리">${[0,1,2,3,4,5].map(i=>`<input inputmode="numeric" maxlength="1" data-code="${i}" aria-label="${i+1}번째 숫자" autocomplete="${i?'off':'one-time-code'}">`).join('')}</div>
+    <div class="fnote" style="background:var(--bg);color:var(--ink2);font-size:12px">목업 안내: 실제 메일은 발송되지 않습니다. 아무 숫자 6자리를 입력하세요.</div>
+    <div class="ferr" data-err="code" role="alert"></div>
+    <button class="btn pri lg" type="submit" style="width:100%">인증하기</button>
+    <p class="muted" style="margin:0;text-align:center;font-size:13px">메일이 오지 않았나요? <button type="button" class="link2" id="resendBtn" data-act="resend">코드 다시 보내기</button> · <button type="button" class="link2" data-act="auth" data-v="signup">이메일 수정</button></p></form>`;
+  else if(m==='welcome')h=`<div class="au-card">
+    ${stepper(3)}<div class="bigicon" style="background:var(--oksoft);color:var(--ok)">${ICON.check}</div>
+    <div><h2>가입이 완료되었습니다</h2><p class="au-sub">${esc(PENDING?.name||'')}님, 환영합니다. 역할은 <b style="color:var(--ink)">${esc(PENDING?.role||'')}</b>로 등록되었습니다. 새 프로젝트를 만들거나 샘플 프로젝트로 전체 흐름을 먼저 둘러볼 수 있습니다.</p></div>
+    <button class="btn pri lg" data-act="welcomeGo" style="width:100%">시작하기</button></div>`;
+  else if(m==='reset')h=NOTICE&&NOTICE[0]==='sent'?`<div class="au-card">
+    <div class="bigicon" style="background:var(--bluesoft);color:var(--blue)">${ICON.mail}</div>
+    <div><h2>메일을 확인해 주세요</h2><p class="au-sub">가입된 이메일이라면 <b style="color:var(--ink)">${esc(NOTICE[1])}</b>로 비밀번호 재설정 링크를 보냈습니다. 링크는 30분 동안 유효합니다.</p></div>
+    <button class="btn pri lg" data-act="auth" data-v="reset2" style="width:100%">(목업) 메일의 재설정 링크 열기</button>
+    <button class="btn lg" data-act="auth" data-v="login" style="width:100%">로그인으로 돌아가기</button></div>`
+    :`<form class="au-card" data-form="reset" novalidate>
+    <div class="bigicon" style="background:var(--bg);color:var(--ink2)">${ICON.key}</div>
+    <div><h2>비밀번호 재설정</h2><p class="au-sub">가입한 이메일을 입력하면 재설정 링크를 보내 드립니다.</p></div>
+    ${fg('email','이메일',{type:'email',ph:'name@example.com',ac:'email',val:PENDING?.email||''})}
+    <button class="btn pri lg" type="submit" style="width:100%">재설정 링크 받기</button>
+    <button type="button" class="btn lg" data-act="auth" data-v="login" style="width:100%">로그인으로 돌아가기</button></form>`;
+  else if(m==='reset2')h=`<form class="au-card" data-form="reset2" novalidate>
+    <div><h2>새 비밀번호 설정</h2><p class="au-sub"><b style="color:var(--ink)">${esc(PENDING?.email||'demo@indoor.dev')}</b> 계정의 새 비밀번호를 입력하세요.</p></div>
+    ${fg('pw','새 비밀번호',{type:'password',ac:'new-password',pw:1,ph:'8자 이상, 영문·숫자 포함',extra:'<div class="meter" id="pwMeter" data-s="0" aria-hidden="true"><i></i><i></i><i></i><i></i></div><div class="muted" style="font-size:12px" id="pwLabel">영문·숫자·특수문자를 섞으면 더 안전합니다.</div>'})}
+    ${fg('pw2','새 비밀번호 확인',{type:'password',ac:'new-password',pw:1})}
+    <button class="btn pri lg" type="submit" style="width:100%">비밀번호 변경</button></form>`;
+  box.innerHTML=h+`<div class="au-legal"><button type="button" data-act="legal">도움말</button><button type="button" data-act="legal">이용약관</button><button type="button" data-act="legal"><b>개인정보처리방침</b></button><span>v0.2 프로토타입</span></div>`;
+  const first=box.querySelector('input.tin,[data-code="0"]');if(first&&!(m==='login'&&NOTICE))first.focus();
+  if(m==='verify')startResend();
+}
+function startResend(){let n=30;const b=$('#resendBtn');clearInterval(resendT);if(!b)return;b.disabled=true;b.textContent=`코드 다시 보내기 (${n}초)`;
+  resendT=setInterval(()=>{n--;const b=$('#resendBtn');if(!b){clearInterval(resendT);return;}if(n<=0){clearInterval(resendT);b.disabled=false;b.textContent='코드 다시 보내기';}else b.textContent=`코드 다시 보내기 (${n}초)`;},1000);}
+
+const FORMS={
+  login(f){const e=val(f,'email').toLowerCase(),p=f.elements.pw.value;let ok=fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':'');ok=fErr(f,'pw',p?'':'비밀번호를 입력하세요.')&&ok;fErr(f,'form','');if(!ok)return;
+    const u=DB.users.find(x=>x.email.toLowerCase()===e);
+    if(!u||u.pw!==p){fErr(f,'form','이메일 또는 비밀번호가 올바르지 않습니다.');f.elements.pw.select();return;}
+    if(u.removed){fErr(f,'form','팀에서 제거된 계정입니다. 관리자에게 문의하세요.');return;}
+    if(!u.verified){PENDING=u;showAuth('verify');return;}
+    signIn(u,f.elements.remember.checked);},
+  signup(f){const name=val(f,'name'),email=val(f,'email').toLowerCase(),pw=f.elements.pw.value,pw2=f.elements.pw2.value;
+    let ok=fErr(f,'name',name?'':'이름을 입력하세요.');
+    ok=fErr(f,'email',!email?'이메일을 입력하세요.':!emailOk(email)?'이메일 형식이 올바르지 않습니다.':DB.users.some(u=>u.email.toLowerCase()===email&&u.verified)?'이미 가입된 이메일입니다.':'')&&ok;
+    ok=fErr(f,'pw',pw.length<8?'8자 이상 입력하세요.':!(/[A-Za-z]/.test(pw)&&/\d/.test(pw))?'영문과 숫자를 함께 사용하세요.':'')&&ok;
+    ok=fErr(f,'pw2',pw2!==pw?'비밀번호가 일치하지 않습니다.':'')&&ok;
+    ok=fErr(f,'a1',f.elements.a1.checked&&f.elements.a2.checked?'':'필수 약관에 동의해 주세요.')&&ok;
+    if(!ok){f.querySelector('.bad')?.focus();return;}
+    DB.users=DB.users.filter(u=>!(u.email.toLowerCase()===email&&!u.verified));
+    const u={id:'u'+Date.now().toString(36),name,email,pw,org:val(f,'org'),role:f.elements.role.value,c:DB.users.length%AV_COLORS.length,last:Date.now(),verified:false,notify:f.elements.a3.checked};
+    DB.users.push(u);saveDB();PENDING=u;showAuth('verify');},
+  verify(f){const code=$$('[data-code]',f).map(i=>i.value).join('');if(!/^\d{6}$/.test(code)){fErr(f,'code','6자리 숫자를 모두 입력하세요.');return;}
+    const u=PENDING&&PENDING.id&&userOf(PENDING.id);if(!u){PENDING&&!PENDING.id?showAuth('welcome'):showAuth('signup');return;}
+    u.verified=true;DB.invites=DB.invites.filter(i=>i.email.toLowerCase()!==u.email.toLowerCase());saveDB();showAuth('welcome');},
+  reset(f){const e=val(f,'email').toLowerCase();if(!fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':''))return;
+    PENDING=DB.users.find(u=>u.email.toLowerCase()===e)||{email:e};AUTHMODE='reset';NOTICE=['sent',e];renderAuth();renderFlow();},
+  reset2(f){const pw=f.elements.pw.value,pw2=f.elements.pw2.value;
+    let ok=fErr(f,'pw',pw.length<8?'8자 이상 입력하세요.':!(/[A-Za-z]/.test(pw)&&/\d/.test(pw))?'영문과 숫자를 함께 사용하세요.':'');ok=fErr(f,'pw2',pw2!==pw?'비밀번호가 일치하지 않습니다.':'')&&ok;if(!ok)return;
+    const u=PENDING&&PENDING.id&&userOf(PENDING.id);if(u){u.pw=pw;saveDB();}
+    showAuth('login',['ok',u?'비밀번호를 변경했습니다. 새 비밀번호로 로그인하세요.':'가입되지 않은 이메일이라 변경할 계정이 없습니다.']);},
+  newProj(f){const name=val(f,'name');if(!fErr(f,'name',!name?'프로젝트 이름을 입력하세요.':DB.projects.some(p=>p.name===name)?'같은 이름의 프로젝트가 있습니다.':''))return;
+    const sample=f.elements.start.value==='sample';
+    const p={id:'p-'+Date.now().toString(36),name,building:val(f,'building'),crs:f.elements.crs.value,desc:val(f,'desc'),owner:ME.id,
+      members:[ME.id,...$$('input[name="mem"]:checked',f).map(i=>i.value)],created:Date.now(),updated:Date.now(),seed:null,done:Array(6).fill(false),lastStep:sample?2:1};
+    DB.projects.unshift(p);if(sample)seedSample(p,false);saveDB();
+    CUR=p;logAct('프로젝트 생성'+(sample?' (샘플 데이터)':''));CUR=null;closeModal();openProject(p.id,sample?2:1);
+    toast(sample?'샘플 데이터로 프로젝트를 만들었습니다 · 3D로 먼저 확인하세요':'프로젝트를 만들었습니다 · 공간정보와 POI를 올려 주세요');},
+  members(f){const p=DB.projects.find(x=>x.id===f.dataset.id);if(!p)return;const sel=$$('input[name="mem"]:checked',f).map(i=>i.value);
+    p.members=[p.owner,...sel.filter(id=>id!==p.owner)];saveDB();closeModal();logAct(`멤버 구성 변경 (${p.members.length}명)`,p.id);render2();toast('멤버를 저장했습니다');},
+  invite(f){const e=val(f,'email').toLowerCase();if(!fErr(f,'email',!e?'이메일을 입력하세요.':!emailOk(e)?'이메일 형식이 올바르지 않습니다.':DB.users.some(u=>u.email.toLowerCase()===e&&isActive(u))?'이미 팀에 있는 멤버입니다.':DB.invites.some(i=>i.email===e)?'이미 초대한 이메일입니다.':''))return;
+    const back=DB.users.find(u=>u.email.toLowerCase()===e&&u.removed);
+    if(back){back.removed=false;back.role=f.elements.role.value;saveDB();logAct(`${back.name} 팀 복귀 (${back.role})`,null);closeModal();renderDash();toast(`${back.name}님을 다시 팀에 추가했습니다`);return;}
+    DB.invites.unshift({email:e,role:f.elements.role.value,at:Date.now(),by:ME.id});saveDB();logAct(`${e} 초대 (${f.elements.role.value})`,null);closeModal();renderDash();toast('초대 메일을 보냈습니다 (목업)');},
+  account(f){const name=val(f,'name');if(!fErr(f,'name',name?'':'이름을 입력하세요.'))return;
+    const cur=f.elements.cpw.value,np=f.elements.npw.value;
+    if(cur||np){if(!fErr(f,'cpw',cur!==ME.pw?'현재 비밀번호가 올바르지 않습니다.':''))return;if(!fErr(f,'npw',np.length<8||!(/[A-Za-z]/.test(np)&&/\d/.test(np))?'8자 이상, 영문·숫자를 함께 사용하세요.':''))return;ME.pw=np;}
+    ME.name=name;ME.org=val(f,'org');saveDB();closeModal();VIEW==='dash'?renderDash():renderWsTop();toast('계정 정보를 저장했습니다');},
+};
+document.addEventListener('submit',e=>{const f=e.target;if(f.dataset.form&&FORMS[f.dataset.form]){e.preventDefault();FORMS[f.dataset.form](f);}});
+document.addEventListener('input',e=>{const t=e.target;
+  if(t.id==='f-pw'&&$('#pwMeter')){const s=t.value?pwScore(t.value):0;$('#pwMeter').dataset.s=s;$('#pwLabel').textContent=s?`비밀번호 강도: ${PW_LABEL[s]}`:'영문·숫자·특수문자를 섞으면 더 안전합니다.';}
+  if(t.classList.contains('tin')&&t.classList.contains('bad')){t.classList.remove('bad');const e2=t.form?.querySelector(`[data-err="${t.name}"]`);if(e2)e2.textContent='';}
+  if(t.dataset.code!=null){t.value=t.value.replace(/\D/g,'').slice(-1);if(t.value)t.nextElementSibling?.focus();}
+  if(t.id==='pSearch'){PQUERY=t.value.trim();renderProjGrid();}
+});
+document.addEventListener('keydown',e=>{const t=e.target;
+  if(t.dataset?.code!=null&&e.key==='Backspace'&&!t.value)t.previousElementSibling?.focus();
+  if(e.key==='Escape'){if($('#modal').innerHTML)closeModal();else if($('.menu'))closeMenus();else if(!$('#flowPanel').hidden)toggleFlow(false);}
+});
+document.addEventListener('paste',e=>{const t=e.target;if(t.dataset?.code==null)return;const d=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);if(!d)return;e.preventDefault();$$('[data-code]').forEach((i,k)=>i.value=d[k]||'');$$('[data-code]')[Math.min(d.length,5)].focus();});
+document.addEventListener('change',e=>{const t=e.target;
+  if(t.id==='f-role'&&$('#roleDesc'))$('#roleDesc').textContent=ROLE_DESC[t.value];
+  if(t.dataset.agree){const f=t.form;const items=$$('[data-agree="1"]',f);if(t.dataset.agree==='all')items.forEach(i=>i.checked=t.checked);else f.querySelector('[data-agree="all"]').checked=items.every(i=>i.checked);if(f.elements.a1.checked&&f.elements.a2.checked)fErr(f,'a1','');}
+  if(t.name==='start'){$$('.opt',t.form).forEach(o=>o.classList.toggle('on',o.contains(t)&&t.checked||o.querySelector('input').checked));}
+  
+});
+document.addEventListener('click',e=>{if(!e.target.closest('.menu')&&!e.target.closest('[data-act="userMenu"],[data-act="projMenu"],[data-act="roleMenu"]'))closeMenus();
+  if(!$('#flowPanel').hidden&&!e.target.closest('#flowPanel,#flowBtn'))toggleFlow(false);},true);
+
+/* ---------- 대시보드 ---------- */
+function userBtn(showName){return`<div class="umenu"><button class="ubtn" data-act="userMenu" aria-haspopup="menu" aria-expanded="false" aria-label="계정 메뉴">${av(ME)}${showName?`<span style="font-weight:500">${esc(ME.name)}</span>`:''}${ICON.down}</button></div>`;}
+function renderDash(){if(!ME)return;
+  $('#dNav').innerHTML=[['projects','프로젝트'],['team','팀·권한']].map(([k,t])=>`<button class="${DTAB===k?'on':''}" data-act="dtab" data-v="${k}" ${DTAB===k?'aria-current="page"':''}>${t}</button>`).join('');
+  $('#dUser').innerHTML=userBtn(true);
+  document.title=(DTAB==='team'?'팀·권한':'프로젝트')+' · 실내 길찾기 네트워크';
+  DTAB==='team'?renderTeam():renderProjects();renderFlow();}
+const myProjects=()=>DB.projects.filter(p=>p.members.includes(ME.id));
+function renderProjects(){const ps=myProjects();const act=DB.activity.filter(a=>!a.p||ps.some(p=>p.id===a.p)).slice(0,8);
+  const running=ps.filter(p=>!p.done?.[5]).length,iss=ps.reduce((s,p)=>s+(p.stats?.issues||0),0);
+  const team=DB.users.filter(isActive);
+  $('#dMain').innerHTML=`<div class="dwrap"><div class="dcol">
+    <div class="dh"><div style="flex:1"><h1>프로젝트</h1><p>${esc(ME.name)}님, ${ps.length?`참여 중인 건물 네트워크 ${ps.length}개 중 ${running}개가 진행 중입니다.`:'아직 참여 중인 프로젝트가 없습니다.'}</p></div>
+      <button class="btn pri lg" data-act="newProj">${ICON.plus}새 프로젝트</button></div>
+    ${ps.length?`<div class="tiles4">
+      <div class="tile"><span class="h3" style="margin:0">참여 프로젝트</span><span class="v sm">${ps.length}</span></div>
+      <div class="tile"><span class="h3" style="margin:0">진행 중</span><span class="v sm">${running}</span></div>
+      <div class="tile"><span class="h3" style="margin:0">남은 검수 이슈</span><span class="v sm" style="color:${iss?'var(--errink)':'var(--ok)'}">${iss}</span></div>
+      <div class="tile"><span class="h3" style="margin:0">팀 멤버</span><span class="v sm">${team.length}</span></div></div>
+    <div class="tbar"><label class="search">${ICON.search}<input class="tin" id="pSearch" type="search" placeholder="프로젝트·건물 이름 검색" value="${esc(PQUERY)}" aria-label="프로젝트 검색"></label>
+      <div class="chips">${[['all','전체'],['run','진행 중'],['done','완료'],['mine','내 프로젝트']].map(([k,t])=>`<button class="chip ${PFILTER===k?'on':''}" data-act="pfilter" data-v="${k}">${t}</button>`).join('')}</div></div>
+    <div class="pgrid" id="pGrid"></div>`
+    :`<div class="card" style="align-items:center;text-align:center;padding:48px 24px;gap:12px"><div class="bigicon" style="background:var(--bluesoft);color:var(--blue)">${ICON.upload}</div><b style="font-size:16px">첫 프로젝트를 시작해 보세요</b><p class="muted" style="margin:0;max-width:440px;line-height:1.6">건물 단위로 프로젝트를 만들고 공간정보(SHP)와 POI를 올리면 길찾기 네트워크를 자동으로 생성합니다.</p>
+      <div style="display:flex;gap:8px;margin-top:6px"><button class="btn lg" data-act="sampleProj">샘플 프로젝트로 둘러보기</button><button class="btn pri lg" data-act="newProj">새 프로젝트 만들기</button></div></div>`}
+  </div>
+  <aside class="dcol">
+    <section class="card" style="gap:4px"><h2 style="font-size:14px;margin-bottom:6px">최근 활동</h2>
+      ${act.length?act.map(a=>{const u=userOf(a.u),p=DB.projects.find(x=>x.id===a.p);return`<div class="act">${av(u,'sm')}<div style="min-width:0"><b>${esc(u?.name||'알 수 없음')}</b> ${p?`<span class="muted">${esc(p.name)} ·</span> `:''}${esc(a.t)}<small>${rel(a.at)}</small></div></div>`;}).join(''):'<p class="muted" style="margin:0">아직 활동이 없습니다.</p>'}</section>
+    <section class="card" style="gap:10px"><div style="display:flex;align-items:center"><h2 style="font-size:14px;flex:1">팀</h2><button class="link2" data-act="dtab" data-v="team" style="font-size:12px">팀·권한 관리</button></div>
+      <div class="avs">${team.slice(0,6).map(u=>av(u)).join('')}</div>
+      <p class="muted" style="margin:0;font-size:12px;line-height:1.6">내 역할: <span class="badge b-blue">${esc(ME.role)}</span> · ${esc(ROLE_DESC[ME.role])}</p></section>
+  </aside></div>`;
+  if(ps.length)renderProjGrid();}
+function renderProjGrid(){const g=$('#pGrid');if(!g)return;const q=PQUERY.toLowerCase();
+  const ps=myProjects().filter(p=>(PFILTER==='all'||(PFILTER==='run'&&!p.done?.[5])||(PFILTER==='done'&&p.done?.[5])||(PFILTER==='mine'&&p.owner===ME.id))&&(!q||(p.name+' '+(p.building||'')).toLowerCase().includes(q))).sort((a,b)=>b.updated-a.updated);
+  g.innerHTML=ps.map(p=>{const st=readProj(p.id),s=p.stats||{},[bc,bt]=projStatus(p),ns=nextStep(p),dn=(p.done||[]).filter(Boolean).length;
+    const mem=p.members.map(userOf).filter(Boolean);
+    return`<article class="pcard" data-act="openProj" data-id="${p.id}" tabindex="0" role="button" aria-label="${esc(p.name)} 열기">
+      <div class="th">${thumbSvg(st)}</div>
+      <button class="kebab" data-act="projMenu" data-id="${p.id}" aria-label="${esc(p.name)} 메뉴" aria-haspopup="menu" aria-expanded="false">${ICON.dots}</button>
+      <div class="pb"><div class="nm ell">${esc(p.name)}</div>
+        <div class="pmeta"><span class="ell">${esc(p.building||'건물 미지정')} · ${s.floors?.length?s.floors.join(' '):'층 정보 없음'} · ${esc(p.crs||'-')}</span></div>
+        <div class="pmeta"><span class="badge ${bc}">${bt}</span><span style="margin-left:auto">${rel(p.updated)} 수정</span></div>
+        <div><div class="prog" aria-label="진행 ${dn}/6 단계">${(p.done||[]).map(v=>`<i class="${v?'on':''}"></i>`).join('')}</div>
+          <div class="muted" style="font-size:12px;margin-top:6px">${ns>6||dn===6?'모든 단계 완료':`다음: ${STEPS[ns-1]}`}</div></div>
+        <div class="pstats"><span>노드 <b>${s.nodes||0}</b></span><span>링크 <b>${s.links||0}</b></span><span>POI <b>${s.pois||0}</b></span><div class="avs" style="margin-left:auto">${mem.slice(0,4).map(u=>av(u,'sm')).join('')}${mem.length>4?`<span class="avatar sm more">+${mem.length-4}</span>`:''}</div></div>
+      </div></article>`;}).join('')+`<button class="pnew" data-act="newProj"><span class="plus">${ICON.plus}</span>새 프로젝트 만들기</button>`;
+  if(!ps.length&&(q||PFILTER!=='all'))g.insertAdjacentHTML('afterbegin',`<div class="card" style="grid-column:1/-1;align-items:center;color:var(--mute)">조건에 맞는 프로젝트가 없습니다.</div>`);}
+function thumbSvg(st){
+  if(!st||!st.spaces||!st.spaces.length)return`<div class="thempty">${ICON.upload}<span>데이터 업로드 전</span></div>`;
+  const fl=[...st.floors].sort((a,b)=>floorNum(a.id)-floorNum(b.id))[0].id;const sp=st.spaces.filter(s=>s.floor===fl);
+  const[x0,y0,x1,y1]=bbox(sp.flatMap(s=>s.poly));const W=320,Hh=148,pad=16,k=Math.min((W-2*pad)/Math.max(1,x1-x0),(Hh-2*pad)/Math.max(1,y1-y0));
+  const ox=(W-(x1-x0)*k)/2,oy=(Hh-(y1-y0)*k)/2;const X=x=>(ox+(x-x0)*k).toFixed(1),Y=y=>(oy+(y1-y)*k).toFixed(1);const P=poly=>poly.map(p=>X(p[0])+','+Y(p[1])).join(' ');
+  const nm=new Map((st.nodes||[]).filter(n=>n.floor===fl).map(n=>[n.id,n]));const o=[];
+  sp.filter(s=>s.type==='corridor').forEach(s=>o.push(`<polygon points="${P(s.poly)}" fill="#ECEAE3"/>`));
+  sp.filter(s=>s.type!=='corridor').forEach(s=>o.push(`<polygon points="${P(s.poly)}" fill="#fff" stroke="#BDB9AF" stroke-width="1"/>`));
+  for(const l of st.links||[]){const a=nm.get(l.a),b=nm.get(l.b);if(a&&b)o.push(`<line x1="${X(a.x)}" y1="${Y(a.y)}" x2="${X(b.x)}" y2="${Y(b.y)}" stroke="#2F5BD3" stroke-width="${l.type==='poi'?1:1.6}"${l.type==='poi'?' stroke-dasharray="2 2"':''}/>`);}
+  for(const n of nm.values())if(n.type!=='poi')o.push(`<circle cx="${X(n.x)}" cy="${Y(n.y)}" r="1.8" fill="#fff" stroke="#2F5BD3" stroke-width="1"/>`);
+  if(!nm.size)(st.pois||[]).filter(p=>p.floor===fl).forEach(p=>o.push(`<circle cx="${X(p.x)}" cy="${Y(p.y)}" r="2.4" fill="#1C1D1F"/>`));
+  return`<svg viewBox="0 0 ${W} ${Hh}" preserveAspectRatio="xMidYMid meet" aria-hidden="true">${o.join('')}<text x="10" y="18" font-size="10" font-family="IBM Plex Mono,monospace" fill="#5F5D57">${esc(fl)}</text></svg>`;}
+function renderTeam(){const users=DB.users.filter(isActive);const admin=isAdmin();const ri=ROLES.indexOf(ME.role);
+  $('#dMain').innerHTML=`<div class="dwrap one"><div class="dcol">
+    <div class="dh"><div style="flex:1"><h1>팀·권한</h1><p>멤버의 역할에 따라 업로드·편집·검수·내보내기 권한이 달라집니다.</p></div>
+      <button class="btn pri lg" data-act="invite" ${admin?'':'disabled title="관리자만 초대할 수 있습니다"'}>${ICON.plus}멤버 초대</button></div>
+    ${admin?'':'<div class="fnote" style="background:var(--warnsoft);color:var(--warnink)">역할 변경과 멤버 초대·제거는 관리자만 할 수 있습니다.</div>'}
+    <section class="card tbl" style="padding:0;overflow:hidden"><table class="t members">
+      <thead><tr><th style="padding-left:20px">멤버</th><th>소속</th><th style="width:150px">역할</th><th>참여 프로젝트</th><th>최근 접속</th><th style="width:1%"><span class="sr">관리</span></th></tr></thead>
+      <tbody>${users.map(u=>{const n=DB.projects.filter(p=>p.members.includes(u.id)).length;return`<tr>
+        <td style="padding-left:20px"><div style="display:flex;align-items:center;gap:10px">${av(u)}<div><b>${esc(u.name)}</b>${u.id===ME.id?' <span class="badge b-gray">나</span>':''}<div class="muted mono" style="font-size:11px">${esc(u.email)}</div></div></div></td>
+        <td>${esc(u.org||'-')}</td>
+        <td>${admin&&u.id!==ME.id?`<button class="rolebtn" data-act="roleMenu" data-uid="${u.id}" aria-haspopup="menu" aria-expanded="false" aria-label="${esc(u.name)} 역할: ${esc(u.role)}"><span>${esc(u.role)}</span>${ICON.down}</button>`:`<span class="badge ${u.role==='관리자'?'b-blue':'b-gray'}">${esc(u.role)}</span>`}</td>
+        <td class="mono">${n}</td><td class="muted">${u.id===ME.id?'접속 중':rel(u.last||Date.now())}</td>
+        <td style="padding-right:16px">${admin&&u.id!==ME.id?`<button class="btn sm danger" data-act="removeMember" data-uid="${u.id}" aria-label="${esc(u.name)} 팀에서 제거">제거</button>`:''}</td></tr>`;}).join('')}
+      ${DB.invites.map(i=>`<tr><td style="padding-left:20px"><div style="display:flex;align-items:center;gap:10px"><span class="avatar" style="background:var(--bg);color:var(--mute);border:1px dashed #C9C6BD">?</span><div><b class="mono" style="font-weight:500">${esc(i.email)}</b><div><span class="badge b-warn">초대 대기</span></div></div></div></td><td class="muted">-</td><td><span class="badge b-gray">${esc(i.role)}</span></td><td class="muted">-</td><td class="muted">${rel(i.at)} 초대</td><td style="padding-right:16px">${admin?`<button class="btn sm danger" data-act="cancelInvite" data-v="${esc(i.email)}" style="white-space:nowrap">초대 취소</button>`:''}</td></tr>`).join('')}
+      </tbody></table></section>
+    <section class="card tbl" style="padding:0;overflow:hidden"><div style="padding:16px 20px 0"><h2 style="font-size:14px">역할별 권한</h2><p class="muted" style="margin:4px 0 12px;font-size:12px">강조된 열이 내 역할(${esc(ME.role)})입니다.</p></div>
+      <table class="t perm"><thead><tr><th style="padding-left:20px">기능</th>${ROLES.map((r,i)=>`<th class="${i===ri?'me':''}">${r}</th>`).join('')}</tr></thead>
+      <tbody>${PERMS.map(([t,a])=>`<tr><td style="padding-left:20px">${t}</td>${a.map((v,i)=>`<td class="${i===ri?'me':''}">${v?'<span class="yes" aria-label="가능">✓</span>':'<span class="no" aria-label="불가">—</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></section>
+  </div></div>`;}
+const render2=()=>{if(VIEW==='dash')renderDash();else if(VIEW==='app')renderWsTop();};
+
+/* ---------- 모달 ---------- */
+function newProjModal(){const others=DB.users.filter(u=>isActive(u)&&u.id!==ME.id);
+  openModal(`<form data-form="newProj" novalidate style="display:flex;flex-direction:column;gap:16px">
+    <div><h2>새 프로젝트</h2><p class="muted" style="margin:4px 0 0">건물 하나를 하나의 프로젝트로 관리합니다. 만든 뒤 데이터 업로드 단계로 이동합니다.</p></div>
+    ${fg('name','프로젝트 이름',{req:1,ph:'예: 도서관 실내 네트워크'})}
+    <div class="row2">${fg('building','건물명',{ph:'예: 중앙도서관'})}
+      <div class="fgrp"><label for="f-crs">좌표계</label><select class="tin" id="f-crs" name="crs"><option value="EPSG:5186">EPSG:5186 (중부원점)</option><option value="EPSG:5179">EPSG:5179 (UTM-K)</option><option value="EPSG:4326">EPSG:4326 (WGS84)</option><option value="자동 감지">파일(.prj)에서 자동 감지</option></select></div></div>
+    <div class="fgrp"><label for="f-desc">설명</label><textarea class="tin" id="f-desc" name="desc" placeholder="작업 범위, 데이터 출처 등"></textarea></div>
+    <div class="fgrp"><label>시작 데이터</label>
+      <label class="opt on"><input type="radio" name="start" value="empty" checked><span><b>빈 프로젝트</b><div class="muted" style="font-size:12px;margin-top:2px">SHP(.zip)·GeoJSON 공간정보와 POI(CSV)를 직접 올립니다.</div></span></label>
+      <label class="opt"><input type="radio" name="start" value="sample"><span><b>샘플 데이터로 시작</b><div class="muted" style="font-size:12px;margin-top:2px">가상의 공학관 1F–3F (공간 39 · 출입문 32 · POI 33)를 불러옵니다.</div></span></label></div>
+    <div class="fgrp"><label>함께 작업할 멤버</label>${others.length?`<div class="mlist">${others.map(u=>`<label><input type="checkbox" name="mem" value="${u.id}">${av(u,'sm')}<span style="flex:1">${esc(u.name)} <span class="muted mono" style="font-size:11px">${esc(u.email)}</span></span><span class="badge b-gray">${esc(u.role)}</span></label>`).join('')}</div>`:'<p class="muted" style="margin:0">팀 멤버가 없습니다. 팀·권한에서 초대할 수 있습니다.</p>'}</div>
+    <div class="foot"><button type="button" class="btn lg" data-act="closeModal">취소</button><button class="btn pri lg" type="submit">프로젝트 만들기</button></div></form>`,'newProj');}
+function membersModal(p){const all=DB.users.filter(isActive);const can=isAdmin()||p.owner===ME.id;
+  openModal(`<form data-form="members" data-id="${p.id}" style="display:flex;flex-direction:column;gap:16px">
+    <div><h2>멤버 관리</h2><p class="muted" style="margin:4px 0 0">${esc(p.name)}에 참여할 멤버를 고릅니다. 권한은 각 멤버의 팀 역할을 따릅니다.</p></div>
+    <div class="mlist" style="max-height:320px">${all.map(u=>`<label><input type="checkbox" name="mem" value="${u.id}" ${p.members.includes(u.id)?'checked':''} ${u.id===p.owner||!can?'disabled':''}>${av(u,'sm')}<span style="flex:1">${esc(u.name)}${u.id===p.owner?' <span class="badge b-blue">소유자</span>':''}</span><span class="badge b-gray">${esc(u.role)}</span></label>`).join('')}</div>
+    ${can?'':'<div class="fnote" style="background:var(--warnsoft);color:var(--warnink)">프로젝트 소유자나 관리자만 멤버를 바꿀 수 있습니다.</div>'}
+    <div class="foot"><button type="button" class="btn lg" data-act="closeModal">닫기</button>${can?'<button class="btn pri lg" type="submit">저장</button>':''}</div></form>`);}
+function deleteModal(p){const can=isAdmin()||p.owner===ME.id;
+  openModal(`<div><h2>프로젝트를 삭제할까요?</h2><p class="muted" style="margin:6px 0 0;line-height:1.6"><b style="color:var(--ink)">${esc(p.name)}</b>의 공간정보·네트워크·검수 기록이 모두 삭제되며 되돌릴 수 없습니다. 필요하면 먼저 내보내기에서 프로젝트 파일(.json)을 저장하세요.</p></div>
+    ${can?'':'<div class="fnote bad">프로젝트 소유자나 관리자만 삭제할 수 있습니다.</div>'}
+    <div class="foot"><button class="btn lg" data-act="closeModal">취소</button><button class="btn lg" style="background:var(--err);border-color:var(--err);color:#fff" data-act="confirmDelete" data-id="${p.id}" ${can?'':'disabled'}>삭제</button></div>`);}
+function removeModal(u){const own=DB.projects.filter(p=>p.owner===u.id),joined=DB.projects.filter(p=>p.members.includes(u.id));
+  openModal(`<div style="display:flex;align-items:center;gap:12px">${av(u,'lg')}<div><h2>${esc(u.name)}님을 팀에서 제거할까요?</h2><p class="muted mono" style="margin:2px 0 0;font-size:12px">${esc(u.email)} · ${esc(u.role)}</p></div></div>
+    <ul style="margin:0;padding-left:18px;line-height:1.8;color:var(--ink2)"><li>참여 중인 프로젝트 ${joined.length}개에서 빠지고, 로그인해도 팀 프로젝트를 볼 수 없습니다.</li>
+      ${own.length?`<li>소유한 프로젝트 ${own.length}개(${own.map(p=>esc(p.name)).join(', ')})의 소유자가 <b>${esc(ME.name)}</b>님으로 바뀝니다.</li>`:''}
+      <li>작업한 내용과 활동 기록은 그대로 남고, 다시 초대하면 복귀할 수 있습니다.</li></ul>
+    <div class="foot"><button class="btn lg" data-act="closeModal">취소</button><button class="btn lg" style="background:var(--err);border-color:var(--err);color:#fff" data-act="confirmRemove" data-uid="${u.id}">제거</button></div>`);}
+function inviteModal(){openModal(`<form data-form="invite" novalidate style="display:flex;flex-direction:column;gap:16px">
+    <div><h2>멤버 초대</h2><p class="muted" style="margin:4px 0 0">초대 메일의 링크로 가입하면 팀에 합류합니다.</p></div>
+    ${fg('email','이메일',{req:1,type:'email',ph:'teammate@example.com'})}
+    <div class="fgrp"><label>역할</label>${ROLES.map((r,i)=>`<label class="opt ${i===1?'on':''}" style="align-items:center"><input type="radio" name="role" value="${r}" ${i===1?'checked':''}><span style="flex:1"><b>${r}</b> <span class="muted" style="font-size:12px">· ${ROLE_DESC[r]}</span></span></label>`).join('')}</div>
+    <div class="foot"><button type="button" class="btn lg" data-act="closeModal">취소</button><button class="btn pri lg" type="submit">초대 보내기</button></div></form>`);}
+function accountModal(){openModal(`<form data-form="account" novalidate style="display:flex;flex-direction:column;gap:16px">
+    <div style="display:flex;align-items:center;gap:12px">${av(ME,'lg')}<div><h2>계정 설정</h2><p class="muted mono" style="margin:2px 0 0;font-size:12px">${esc(ME.email)} · ${esc(ME.role)}</p></div></div>
+    <div class="row2">${fg('name','이름',{req:1,val:ME.name,ac:'name'})}${fg('org','소속',{val:ME.org||'',ac:'organization'})}</div>
+    <div style="border-top:1px solid var(--line2);padding-top:14px;display:flex;flex-direction:column;gap:12px"><b style="font-size:13px">비밀번호 변경 <span class="muted" style="font-weight:400">(선택)</span></b>
+      <div class="row2">${fg('cpw','현재 비밀번호',{type:'password',ac:'current-password'})}${fg('npw','새 비밀번호',{type:'password',ac:'new-password'})}</div></div>
+    <div class="foot"><button type="button" class="btn lg" data-act="closeModal">취소</button><button class="btn pri lg" type="submit">저장</button></div></form>`);}
+
+/* ---------- 작업 화면 상단 ---------- */
+function renderWsTop(){const m=$('#wsMembers'),u=$('#wsUser');if(!m||!u)return;
+  if(!ME||!CUR){m.innerHTML='';u.innerHTML='';return;}
+  const mem=CUR.members.map(userOf).filter(Boolean);
+  m.innerHTML=`<button class="avs" data-act="projMembers" data-id="${CUR.id}" style="border:none;background:none;cursor:pointer;padding:0 0 0 6px" title="멤버 ${mem.length}명 · 관리" aria-label="프로젝트 멤버 ${mem.length}명">${mem.slice(0,3).map(x=>av(x,'sm')).join('')}${mem.length>3?`<span class="avatar sm more">+${mem.length-3}</span>`:''}</button>`;
+  u.innerHTML=userBtn(false);}
+
+/* ---------- 화면 흐름 안내 ---------- */
+const FLOW=[['계정',[['login','로그인'],['signup','회원가입'],['verify','이메일 인증'],['reset','비밀번호 재설정']]],['프로젝트 관리',[['projects','프로젝트 목록'],['newProj','새 프로젝트 만들기'],['team','팀·권한']]],['네트워크 구축 · 검수',STEPS.map((s,i)=>['s'+(i+1),s])]];
+const FLOW_KEYS=FLOW.flatMap(g=>g[1].map(x=>x[0]));
+function flowCur(){if(VIEW==='auth')return{signup:'signup',verify:'verify',welcome:'verify',reset:'reset',reset2:'reset'}[AUTHMODE]||'login';
+  if(VIEW==='dash')return $('#modal .modal[data-key="newProj"]')?'newProj':DTAB;return's'+UI.step;}
+function renderFlow(){const c=flowCur(),i=FLOW_KEYS.indexOf(c);$('#flowPos').textContent=`${i+1}/${FLOW_KEYS.length}`;
+  const P=$('#flowPanel');if(P.hidden)return;let n=0;
+  P.innerHTML=`<div style="display:flex;align-items:center"><b style="flex:1;font-size:13px">화면 흐름</b><span class="muted" style="font-size:11px">누르면 해당 화면으로 이동</span></div>`+
+    FLOW.map(([g,items])=>`<div><h4>${g}</h4>${items.map(([k,t])=>`<button class="fl ${k===c?'on':''}" data-act="flowJump" data-v="${k}" ${k===c?'aria-current="step"':''}><i>${String(++n).padStart(2,'0')}</i>${t}</button>`).join('')}</div>`).join('')+
+    `<div style="display:flex;gap:6px;border-top:1px solid var(--line2);padding-top:10px"><button class="btn sm" style="flex:1" data-act="flowStep" data-v="-1" ${i<=0?'disabled':''}>← 이전 화면</button><button class="btn sm pri" style="flex:1" data-act="flowStep" data-v="1" ${i>=FLOW_KEYS.length-1?'disabled':''}>다음 화면 →</button></div>`;}
+function toggleFlow(on){const P=$('#flowPanel');P.hidden=!on;$('#flowBtn').setAttribute('aria-expanded',String(on));renderFlow();}
+function ensureLogin(){if(ME)return true;const u=userOf('u1')||DB.users.find(x=>x.verified);if(!u)return false;ME=u;setSession(u.id,false);return true;}
+function flowJump(k){closeModal();
+  if(['login','signup','reset'].includes(k)){PENDING=null;showAuth(k);return;}
+  if(k==='verify'){if(!PENDING||!PENDING.id||PENDING.verified){PENDING={id:null,email:'newmember@example.com',name:'새 멤버',role:'편집자'};}showAuth('verify');return;}
+  if(!ensureLogin())return;
+  if(k==='projects'||k==='team'){showDash(k);return;}
+  if(k==='newProj'){showDash('projects');newProjModal();return;}
+  const step=+k.slice(1);
+  if(VIEW==='app'&&CUR){go(step);return;}
+  let p=myProjects().find(x=>x.id==='p-eng')||myProjects().find(x=>x.stats?.nodes);
+  if(!p){p=makeSampleProject();}
+  openProject(p.id,step);}
+function makeSampleProject(){const p={id:'p-'+Date.now().toString(36),name:'샘플 · 공학관',building:'공학관',crs:'EPSG:5186',desc:'샘플 데이터 둘러보기',owner:ME.id,members:[ME.id],created:Date.now(),updated:Date.now(),seed:'sample',done:[true,false,true,false,false,false],lastStep:2};
+  DB.projects.unshift(p);seedSample(p,true);saveDB();return p;}
+
+/* ---------- 액션 ---------- */
+Object.assign(ACT,{
+  auth(b){PENDING=b.dataset.v==='reset2'?PENDING:null;showAuth(b.dataset.v);},
+  fillDemo(){const f=$('form[data-form="login"]');f.elements.email.value='demo@indoor.dev';f.elements.pw.value='demo1234';fErr(f,'email','');fErr(f,'pw','');f.querySelector('button[type=submit]').focus();},
+  sso(){const u=userOf('u1');if(u){signIn(u,false);toast('(목업) Google 계정 연동으로 로그인했습니다');}},
+  pwToggle(b){const i=b.parentElement.querySelector('input');const show=i.type==='password';i.type=show?'text':'password';b.textContent=show?'숨기기':'보기';b.setAttribute('aria-label',show?'비밀번호 숨기기':'비밀번호 표시');},
+  resend(){toast(`${PENDING?.email||''}로 인증 코드를 다시 보냈습니다 (목업)`);startResend();},
+  welcomeGo(){const u=PENDING&&userOf(PENDING.id);if(u)signIn(u,true);else showAuth('login');},
+  logout(){closeMenus();const n=ME?.name;ME=null;setSession(null);showAuth('login',['ok',`${n||''}님, 로그아웃했습니다.`]);},
+  userMenu(b){const open=b.getAttribute('aria-expanded')==='true';closeMenus();if(open)return;b.setAttribute('aria-expanded','true');
+    b.parentElement.insertAdjacentHTML('beforeend',`<div class="menu" role="menu"><div class="mh">${av(ME,'lg')}<div><b class="ell">${esc(ME.name)}</b><small class="ell">${esc(ME.email)}</small><span class="badge b-blue" style="margin-top:4px;display:inline-block">${esc(ME.role)}</span></div></div>
+      ${VIEW==='app'?'<button role="menuitem" data-act="toProjects">프로젝트 목록</button>':''}<button role="menuitem" data-act="dtab" data-v="team">팀·권한</button><button role="menuitem" data-act="account">계정 설정</button><hr><button role="menuitem" class="danger" data-act="logout">로그아웃</button></div>`);},
+  projMenu(b){const open=b.getAttribute('aria-expanded')==='true';closeMenus();if(open)return;b.setAttribute('aria-expanded','true');const id=b.dataset.id;
+    b.parentElement.insertAdjacentHTML('beforeend',`<div class="menu" role="menu"><button role="menuitem" data-act="openProj" data-id="${id}">열기</button><button role="menuitem" data-act="projMembers" data-id="${id}">멤버 관리</button><hr><button role="menuitem" class="danger" data-act="projDelete" data-id="${id}">삭제</button></div>`);},
+  openProj(b){closeMenus();openProject(b.dataset.id);},
+  projMembers(b){closeMenus();const p=DB.projects.find(x=>x.id===b.dataset.id);if(p)membersModal(p);},
+  projDelete(b){closeMenus();const p=DB.projects.find(x=>x.id===b.dataset.id);if(p)deleteModal(p);},
+  confirmDelete(b){const p=DB.projects.find(x=>x.id===b.dataset.id);if(!p)return;DB.projects=DB.projects.filter(x=>x!==p);DB.activity=DB.activity.filter(a=>a.p!==p.id);lsDel(projKey(p.id));saveDB();closeModal();renderDash();toast(`'${p.name}' 프로젝트를 삭제했습니다`);},
+  newProj(){newProjModal();},
+  sampleProj(){const p=makeSampleProject();CUR=p;logAct('프로젝트 생성 (샘플 데이터)');CUR=null;openProject(p.id,2);},
+  dtab(b){closeMenus();DTAB=b.dataset.v;if(VIEW!=='dash')showDash(DTAB);else renderDash();},
+  pfilter(b){PFILTER=b.dataset.v;$$('[data-act="pfilter"]').forEach(x=>x.classList.toggle('on',x===b));renderProjGrid();},
+  invite(){inviteModal();},
+  removeMember(b){const u=userOf(b.dataset.uid);if(u&&isAdmin()&&u.id!==ME.id)removeModal(u);},
+  confirmRemove(b){const u=userOf(b.dataset.uid);if(!u||!isAdmin()||u.id===ME.id)return;
+    for(const p of DB.projects){p.members=p.members.filter(id=>id!==u.id);if(p.owner===u.id){p.owner=ME.id;if(!p.members.includes(ME.id))p.members.unshift(ME.id);}}
+    u.removed=true;saveDB();logAct(`${u.name} 팀에서 제거`,null);closeModal();renderDash();toast(`${u.name}님을 팀에서 제거했습니다`);},
+  cancelInvite(b){DB.invites=DB.invites.filter(i=>i.email!==b.dataset.v);saveDB();renderDash();toast('초대를 취소했습니다');},
+  account(){closeMenus();accountModal();},
+  modalBg(b,e){if(e.target===b)closeModal();},
+  closeModal(){closeModal();},
+  roleMenu(b){const open=b.getAttribute('aria-expanded')==='true';closeMenus();if(open)return;const u=userOf(b.dataset.uid);if(!u)return;b.setAttribute('aria-expanded','true');
+    const m=document.createElement('div');m.className='menu fixed';m.setAttribute('role','menu');m.setAttribute('aria-label',u.name+' 역할 선택');
+    m.innerHTML=ROLES.map(r=>`<button role="menuitemradio" aria-checked="${r===u.role}" class="ropt ${r===u.role?'on':''}" data-act="setRole" data-uid="${u.id}" data-v="${r}"><span class="ck">${r===u.role?'✓':''}</span><span><b>${r}</b><small>${ROLE_DESC[r]}</small></span></button>`).join('');
+    document.body.appendChild(m);const rb=b.getBoundingClientRect(),mh=m.offsetHeight,mw=m.offsetWidth;
+    m.style.left=Math.max(8,Math.min(rb.left,innerWidth-mw-8))+'px';m.style.top=(rb.bottom+6+mh>innerHeight-8?Math.max(8,rb.top-6-mh):rb.bottom+6)+'px';
+    m.querySelector('.on')?.focus();},
+  setRole(b){closeMenus();const u=userOf(b.dataset.uid),r=b.dataset.v;if(!u||u.role===r)return;u.role=r;saveDB();logAct(`${u.name} 역할 변경 → ${r}`,null);toast(`${u.name}님의 역할을 ${r}(으)로 바꿨습니다`);renderDash();},
+  toProjects(){closeMenus();showDash('projects');},
+  flow(){toggleFlow($('#flowPanel').hidden);},
+  flowJump(b){toggleFlow(false);flowJump(b.dataset.v);},
+  flowStep(b){const i=FLOW_KEYS.indexOf(flowCur())+ +b.dataset.v;if(FLOW_KEYS[i])flowJump(FLOW_KEYS[i]);},
+});
+// 카드는 article이라 Enter/Space로도 열리게
+document.addEventListener('keydown',e=>{const c=e.target.closest?.('.pcard');if(c&&e.target===c&&(e.key==='Enter'||e.key===' ')){e.preventDefault();openProject(c.dataset.id);}});
+// 작업 화면 이벤트를 프로젝트 기록·진행 상태에 반영
+(()=>{const wrap=(k,after)=>{const f=ACT[k];ACT[k]=function(...a){const r=f.apply(this,a);if(CUR)after(...a);return r;};};
+  wrap('generate',()=>{if(S.nodes.length)logAct(`네트워크 생성 (노드 ${S.nodes.length} · 링크 ${S.links.length})`);});
+  wrap('applyUpload',()=>{if(S.floors.length)logAct(`공간정보·POI 업로드 (${S.floors.length}개 층)`);});
+  wrap('loadSample',()=>logAct('샘플 데이터 불러오기'));
+  const ex=t=>()=>{CUR.done[5]=true;saveDB();logAct(t);renderHeader();};
+  wrap('exGeo',ex('network.geojson 내보내기'));wrap('gltf',ex('3D 모델(.glb) 내보내기'));wrap('exProj',ex('프로젝트 파일 저장'));
+  wrap('reset',()=>{if(!S.floors.length){CUR.done=Array(6).fill(false);saveNow(true);logAct('프로젝트 초기화');}});
+  const _go=go;go=function(s){_go(s);if(CUR){CUR.lastStep=s;syncProject(false);renderHeader();document.title=CUR.name+' · '+STEPS[s-1];}renderFlow();};
+})();
+function bootAuth(){lsDel('indoor-net-db-v1');DB=lsGet(DB_KEY);if(!DB||!Array.isArray(DB.users)){DB=seedDB();saveDB();}
+  DB.invites=DB.invites||[];DB.activity=DB.activity||[];
+  for(const p of DB.projects)if(p.seed==='sample'&&!readProj(p.id))seedSample(p,true);
+  let sess=null;try{sess=JSON.parse(sessionStorage.getItem(SESS_KEY)||'null');}catch(e){}if(!sess)sess=lsGet(SESS_KEY);
+  ME=sess&&userOf(sess.uid)||null;
+  if(ME)showDash('projects');else showAuth('login');}
+
+
+/* ---------- 모바일 · 터치 ---------- */
+// 화면 고정 위치 메뉴(역할 선택)는 스크롤·크기 변경 시 닫기
+addEventListener('scroll',()=>{if($('.menu.fixed'))closeMenus();},true);addEventListener('resize',()=>{if($('.menu.fixed'))closeMenus();});
+const COARSE=window.matchMedia&&matchMedia('(pointer:coarse)').matches;
+ACT.legal=()=>toast('(목업) 문서 준비 중입니다');
+// 지도: 한 손가락은 마우스 조작과 동일하게, 두 손가락은 확대·축소
+const TOUCH_MAPS={edSvg:()=>drawEditorMap(),rtSvg:()=>drawRouteMap(),genSvg:()=>{const s=$('#genSvg');if(s)renderMap(s,UI.genFloor||sortedFloors()[0]?.id,{});}};
+let TC=null;
+const mEv=(type,t,target)=>(target||window).dispatchEvent(new MouseEvent(type,{clientX:t.clientX,clientY:t.clientY,button:0,buttons:1,bubbles:true,cancelable:true}));
+const tDist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+document.addEventListener('touchstart',e=>{const svg=e.target.closest&&e.target.closest('.mapsvg');if(!svg||!TOUCH_MAPS[svg.id])return;e.preventDefault();
+  if(e.touches.length===1){TC={svg,mode:'one'};mEv('mousedown',e.touches[0],svg);}
+  else if(e.touches.length===2){if(TC&&TC.mode==='one')mEv('mouseup',e.touches[0]);TC={svg,mode:'pinch',d:tDist(e.touches[0],e.touches[1])};}},{passive:false});
+document.addEventListener('touchmove',e=>{if(!TC)return;e.preventDefault();
+  if(TC.mode==='one'&&e.touches.length===1)mEv('mousemove',e.touches[0]);
+  else if(TC.mode==='pinch'&&e.touches.length===2){const[a,b]=e.touches,d=tDist(a,b),v=VIEWS[TC.svg.id];
+    if(v&&TC.d){const r=TC.svg.getBoundingClientRect();zoomAt(v,[(a.clientX+b.clientX)/2-r.left,(a.clientY+b.clientY)/2-r.top],d/TC.d);TOUCH_MAPS[TC.svg.id]();}TC.d=d;}},{passive:false});
+const tEnd=e=>{if(!TC)return;if(TC.mode==='one')mEv('mouseup',e.changedTouches[0]);if(!e.touches.length)TC=null;};
+document.addEventListener('touchend',tEnd,{passive:false});document.addEventListener('touchcancel',tEnd,{passive:false});
+
+/* ---------------- 시작 ---------------- */
+setupEditor();
+attachPanZoom($('#rtSvg'),drawRouteMap);
+document.addEventListener('mousedown',e=>{if(e.target.closest('#genSvg')){const svg=$('#genSvg');if(!svg.dataset.pz){svg.dataset.pz=1;attachPanZoom(svg,()=>renderMap(svg,UI.genFloor,{}));svg.dispatchEvent(new MouseEvent('mousedown',e));}}},true);
+bootAuth();
+</script>
+</body>
+</html>
