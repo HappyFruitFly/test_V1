@@ -821,6 +821,16 @@ function generate(){
 const RULES={'R-01':{name:'고립 노드',sev:'warn'},'R-02':{name:'POI 미연결',sev:'err'},'R-03':{name:'벽 관통 링크',sev:'err'},'R-04':{name:'중복 노드',sev:'warn'},'R-05':{name:'층간 연결 누락',sev:'err'},'R-06':{name:'분리된 네트워크',sev:'warn'}};
 function mkIssue(code,floor,x,y,ids,target,desc,fix){return{code,key:code+':'+ids.join(','),sev:RULES[code].sev,rule:RULES[code].name,floor,x,y,ids,target,desc,fix};}
 function wallEdges(f){return S.spaces.filter(s=>s.floor===f&&s.type!=='corridor').flatMap(s=>edgesOf(s.poly));}
+// 계단·엘리베이터 노드: 위·아래층의 같은 종류 노드와 직접 연결
+function vertCandidates(n){if(n.type!=='poi'||n.kind==='normal')return[];const fl=sortedFloors().map(f=>f.id),i=fl.indexOf(n.floor),adj=[fl[i-1],fl[i+1]].filter(Boolean);
+  const linked=new Set(S.links.filter(l=>l.a===n.id||l.b===n.id).map(l=>l.a===n.id?l.b:l.a));
+  return S.nodes.filter(m=>adj.includes(m.floor)&&m.type==='poi'&&m.kind===n.kind&&!linked.has(m.id))
+    .map(m=>({m,d:Math.hypot(m.x-n.x,m.y-n.y),same:(m.name||'').replace(/\s/g,'')===(n.name||'').replace(/\s/g,'')}))
+    .sort((a,b)=>(b.same-a.same)||(a.d-b.d));}
+function vertLinkBox(n,vls){if(n.type!=='poi'||n.kind==='normal')return'';const c=vertCandidates(n),k=n.kind==='ev'?'엘리베이터':'계단';
+  return`<div><h3 class="h3" style="margin:6px 0">다른 층과 연결</h3>${c.length?`<div style="display:flex;gap:6px"><select class="inp" id="vTarget" style="flex:1;min-width:0" aria-label="연결할 ${k}">${c.map(x=>`<option value="${x.m.id}">${x.m.floor} · ${esc(x.m.name||x.m.id)} (${fmt(x.d,1)} m)</option>`).join('')}</select><button class="btn" data-act="vLink">연결</button></div>
+    <p class="muted" style="margin:6px 0 0;font-size:12px;line-height:1.5">위·아래층의 ${k}만 보여 줍니다. 같은 이름·가까운 순으로 정렬됩니다.</p>`
+    :`<p class="muted" style="margin:0;font-size:12px">${vls.length?'위·아래층 '+k+'과 모두 연결되어 있습니다.':'위·아래층에 연결할 '+k+'이 없습니다.'}</p>`}</div>`;}
 function suggestVertical(n){const fl=sortedFloors().map(f=>f.id);const i=fl.indexOf(n.floor);const adj=[fl[i-1],fl[i+1]].filter(Boolean);
   const linked=new Set(S.links.filter(l=>l.a===n.id||l.b===n.id).map(l=>l.a===n.id?l.b:l.a));
   const c=S.nodes.filter(m=>adj.includes(m.floor)&&m.type==='poi'&&m.kind===n.kind&&!linked.has(m.id)&&Math.hypot(m.x-n.x,m.y-n.y)<=5);return nearest(n,c);}
@@ -1167,6 +1177,7 @@ function renderProps(){
       <div class="fld"><label>Y (m)</label><input class="inp num" type="number" step="0.1" data-pf="ny" value="${fmt(n.y,2)}"></div>
       <div class="fld"><span>연결 링크</span><span>${ls.length?ls.filter(l=>!vls.includes(l)).map(l=>`<button class="link" data-act="selLink" data-id="${l.id}">${l.id}</button>`).join(' '):'<span style="color:var(--err)">없음</span>'}</span></div></div>
     ${vls.length?`<div><h3 class="h3" style="margin:6px 0">층간 연결</h3>${vls.map(l=>{const o=NI.get(l.a===n.id?l.b:l.a);return`<div class="fld"><span>${TYPE_KO[l.type]} → ${o.floor} ${esc(o.name||o.id)}</span><button class="btn sm danger" data-act="delLink" data-id="${l.id}">삭제</button></div>`;}).join('')}</div>`:''}
+    ${vertLinkBox(n,vls)}
     <div style="display:flex;gap:6px"><button class="btn" style="flex:1" data-act="startLink">여기서 링크 연결</button><button class="btn danger" data-act="delSel">삭제</button></div>`;return;}
   if(s&&s.kind==='link'){const l=S.links.find(x=>x.id===s.id);if(l){const a=NI.get(l.a),b=NI.get(l.b);
     P.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3 class="h3" style="margin:0">선택한 객체</h3><span class="badge ${l.src==='manual'?'b-gray':'b-blue'}">${l.src==='manual'?'직접 추가':l.edited?'자동 생성 · 수정됨':'자동 생성'}</span></div>
@@ -1194,7 +1205,7 @@ function hitTest(v,p){let best=null,bd=COARSE?20:10;for(const n of S.nodes){if(n
 function setupEditor(){
   const ed=$('#edSvg');let drag=null;const pt=e=>{const r=ed.getBoundingClientRect();return[e.clientX-r.left,e.clientY-r.top];};
   ed.addEventListener('contextmenu',e=>e.preventDefault());
-  ed.addEventListener('mousedown',e=>{if(!S.nodes.length||!UI.floor)return;const v=VIEWS.edSvg;if(!v)return;const p=pt(e),w=toW(v,p),hit=hitTest(v,p);const pan={mode:'pan',p0:p,ox:v.ox,oy:v.oy,moved:false};
+  ed.addEventListener('mousedown',e=>{const ae=document.activeElement;if(ae&&ae!==document.body&&ae.blur)ae.blur();if(!S.nodes.length||!UI.floor)return;const v=VIEWS.edSvg;if(!v)return;const p=pt(e),w=toW(v,p),hit=hitTest(v,p);const pan={mode:'pan',p0:p,ox:v.ox,oy:v.oy,moved:false};
     if(e.button!==0){drag=pan;return;}const t=UI.tool;
     if(t==='select'){if(hit){UI.sel=hit;UI.issue=null;if(hit.kind==='node')drag={mode:'node',id:hit.id,p0:p,moved:false};renderEditor();return;}drag={...pan,clear:true};return;}
     if(t==='node'){if(hit&&hit.kind==='node'){UI.sel=hit;renderEditor();return;}pushUndo();const n=hit&&hit.kind==='link'?splitLink(hit.id,w):newNode(UI.floor,w[0],w[1],'corridor');UI.sel={kind:'node',id:n.id};afterChange();return;}
@@ -1212,11 +1223,12 @@ function setupEditor(){
   });
   window.addEventListener('mouseup',()=>{if(!drag)return;const d=drag;drag=null;if(d.mode==='pan'&&!d.moved&&d.clear&&(UI.sel||UI.issue)){UI.sel=null;UI.issue=null;renderEditor();}if(d.mode==='node'&&d.snap)afterChange();});
   ed.addEventListener('wheel',e=>{e.preventDefault();const v=VIEWS.edSvg;if(!v)return;zoomAt(v,pt(e),e.deltaY<0?1.15:1/1.15);drawEditorMap();},{passive:false});
-  window.addEventListener('keydown',e=>{if(VIEW!=='app'||UI.step!==4||$('#modal').innerHTML||/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName))return;const k=e.key.toLowerCase();
+  window.addEventListener('keydown',e=>{const ae=document.activeElement;if(VIEW!=='app'||UI.step!==4||$('#modal').innerHTML||/SELECT|TEXTAREA/.test(ae?.tagName)||(ae?.tagName==='INPUT'&&!/checkbox|radio|range|button/.test(ae.type)))return;const k=e.key.toLowerCase();
     if((e.ctrlKey||e.metaKey)&&k==='z'){e.preventDefault();e.shiftKey?redo():undo();return;}if((e.ctrlKey||e.metaKey)&&k==='y'){e.preventDefault();redo();return;}if(e.ctrlKey||e.metaKey||e.altKey)return;
     const map={v:'select',n:'node',l:'link',d:'del'};if(map[k]){UI.tool=map[k];UI.pendingLink=null;renderEditor();return;}
     if(k==='escape'){UI.pendingLink=null;UI.sel=null;UI.issue=null;renderEditor();return;}
-    if((k==='delete'||k==='backspace')&&UI.sel){e.preventDefault();ACT.delSel();}});
+    if(k==='delete'||k==='backspace'){e.preventDefault();if(UI.sel){ACT.delSel();return;}
+      toast(UI.pendingLink?'링크 연결 중입니다 · Esc로 끝낸 뒤 선택·이동(V)으로 지울 대상을 클릭하세요':UI.issue?'이슈가 선택된 상태입니다 · 지도에서 지울 노드·링크를 직접 클릭하세요':'지울 노드나 링크를 먼저 클릭해 선택하세요 · 삭제(D) 도구로 바로 지울 수도 있습니다');}});
 }
 
 /* ---------------- 5. 길찾기 ---------------- */
@@ -1336,6 +1348,8 @@ const ACT={
   delLink(b){pushUndo();deleteLink(b.dataset.id);afterChange();},
   delSel(){const s=UI.sel;if(!s)return;pushUndo();s.kind==='node'?deleteNode(s.id):deleteLink(s.id);UI.sel=null;afterChange();},
   splitSel(){const l=S.links.find(x=>x.id===UI.sel?.id);if(!l)return;const a=NI.get(l.a),b=NI.get(l.b);if(a.floor!==b.floor){toast('층간 링크는 분할할 수 없습니다');return;}pushUndo();const n=splitLink(l.id,[(a.x+b.x)/2,(a.y+b.y)/2]);UI.sel={kind:'node',id:n.id};afterChange();},
+  vLink(){const n=NI.get(UI.sel?.id),t=NI.get($('#vTarget')?.value);if(!n||!t)return;pushUndo();const l=addLink(n,t,n.kind,{src:'manual'});if(!l){undoStack.pop();toast('이미 연결되어 있습니다');return;}
+    afterChange();toast(`${n.floor} ${n.name} ↔ ${t.floor} ${t.name} 연결했습니다`);},
   startLink(){UI.tool='link';UI.pendingLink=UI.sel.id;renderEditor();},
   openNode(b){const n=NI.get(b.dataset.id);if(!n)return;UI.floor=n.floor;const is=ISSUES.find(i=>i.ids.includes(n.id));UI.issue=is?is.key:null;UI.sel=is?null:{kind:'node',id:n.id};go(4);requestAnimationFrame(()=>{centerOn(n.x,n.y);drawEditorMap();});},
   openIssueFor(){const r=UI.route;const cand=ISSUES.find(i=>i.ids.includes(r.to)||i.ids.includes(r.from))||ISSUES.find(i=>i.code==='R-05')||ISSUES[0];if(cand){UI.issue=cand.key;UI.floor=cand.floor;UI.sel=null;}go(4);if(cand)requestAnimationFrame(()=>{centerOn(cand.x,cand.y);drawEditorMap();});},
