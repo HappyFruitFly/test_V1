@@ -1376,7 +1376,7 @@ window.addEventListener('resize',()=>{if(UI.step===4)drawEditorMap();if(UI.step=
    계정 · 프로젝트 관리 (목업)
    로그인/회원가입/프로젝트 목록/팀·권한. 서버 없이 이 브라우저의 localStorage에만 저장합니다.
    ===================================================================== */
-const DB_KEY='indoor-net-db-v1',SESS_KEY='indoor-net-session-v1';
+const DB_KEY='indoor-net-db-v2',SESS_KEY='indoor-net-session-v1';
 const AV_COLORS=['#2F5BD3','#1F5C38','#B4410C','#6B4FBB','#0B2475','#8A6200'];
 const ROLES=['관리자','편집자','검수자','뷰어'];
 const ROLE_DESC={'관리자':'프로젝트·멤버 관리 포함 모든 권한','편집자':'업로드·생성·편집·내보내기','검수자':'검수 이슈 처리·길찾기 테스트','뷰어':'결과 조회·길찾기 테스트만'};
@@ -1408,10 +1408,10 @@ const ICON={
 
 /* ---------- 초기 데이터 ---------- */
 function seedDB(){const now=Date.now();return{
-  users:[{id:'u1',name:'이현빈',email:'demo@indoor.dev',pw:'demo1234',org:'스마트ICT융합전공',role:'관리자',c:0,last:now-10*60e3,verified:true},
-    {id:'u2',name:'윤태웅',email:'taewoong@indoor.dev',pw:null,org:'스마트ICT융합전공',role:'관리자',c:1,last:now-2*HR,verified:true},
-    {id:'u3',name:'전민석',email:'minseok@indoor.dev',pw:null,org:'스마트ICT융합전공',role:'편집자',c:3,last:now-20*HR,verified:true},
-    {id:'u4',name:'원준서',email:'junseo@indoor.dev',pw:null,org:'스마트ICT융합전공',role:'검수자',c:2,last:now-5*HR,verified:true}],
+  users:[{id:'u1',name:'김도윤',email:'demo@indoor.dev',pw:'demo1234',org:'공간정보 설계팀',role:'관리자',c:0,last:now-10*60e3,verified:true},
+    {id:'u2',name:'박서준',email:'seojun@indoor.dev',pw:null,org:'공간정보 설계팀',role:'관리자',c:1,last:now-2*HR,verified:true},
+    {id:'u3',name:'최지우',email:'jiwoo@indoor.dev',pw:null,org:'공간정보 설계팀',role:'편집자',c:3,last:now-20*HR,verified:true},
+    {id:'u4',name:'정하은',email:'haeun@indoor.dev',pw:null,org:'공간정보 설계팀',role:'검수자',c:2,last:now-5*HR,verified:true}],
   invites:[],
   projects:[
     {id:'p-eng',name:'공학관 실내 네트워크',building:'공학관',crs:'EPSG:5186',desc:'샘플 데이터 기반 1차 구축 · 2F 출입문 누락 검수 중',owner:'u2',members:['u2','u1','u3','u4'],created:now-6*DY,updated:now-2*HR,seed:'sample',done:[true,true,true,true,false,false],lastStep:4},
@@ -1799,7 +1799,7 @@ document.addEventListener('keydown',e=>{const c=e.target.closest?.('.pcard');if(
   wrap('reset',()=>{if(!S.floors.length){CUR.done=Array(6).fill(false);saveNow(true);logAct('프로젝트 초기화');}});
   const _go=go;go=function(s){_go(s);if(CUR){CUR.lastStep=s;syncProject(false);renderHeader();document.title=CUR.name+' · '+STEPS[s-1];}renderFlow();};
 })();
-function bootAuth(){DB=lsGet(DB_KEY);if(!DB||!Array.isArray(DB.users)){DB=seedDB();saveDB();}
+function bootAuth(){lsDel('indoor-net-db-v1');DB=lsGet(DB_KEY);if(!DB||!Array.isArray(DB.users)){DB=seedDB();saveDB();}
   DB.invites=DB.invites||[];DB.activity=DB.activity||[];
   for(const p of DB.projects)if(p.seed==='sample'&&!readProj(p.id))seedSample(p,true);
   let sess=null;try{sess=JSON.parse(sessionStorage.getItem(SESS_KEY)||'null');}catch(e){}if(!sess)sess=lsGet(SESS_KEY);
